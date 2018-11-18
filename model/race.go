@@ -141,7 +141,7 @@ func (r *GormRaceRepository) End(ctx context.Context, race *Race) error {
 // List lists all races
 func (r *GormRaceRepository) List(ctx context.Context) ([]Race, error) {
 	result := make([]Race, 0)
-	db := r.db.Find(&result).Order("name ASC")
+	db := r.db.Order("name ASC").Find(&result)
 	if err := db.Error; err != nil {
 		return result, errors.Wrap(err, "fail to list races")
 	}

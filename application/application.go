@@ -11,6 +11,8 @@ type Application interface {
 	Laps() model.LapRepository
 }
 
+
+
 // A Transaction abstracts a database transaction. The repositories created for the transaction object make changes inside the the transaction
 type Transaction interface {
 	Application

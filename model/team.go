@@ -41,6 +41,7 @@ func (t Team) Equal(o Equaler) bool {
 // TeamRepository provides functions to create and view teams
 type TeamRepository interface {
 	Create(ctx context.Context, team *Team) error
+	List(ctx context.Context, raceID uuid.UUID) ([]Team, error)
 }
 
 // NewTeamRepository creates a new GormTeamRepository
@@ -76,4 +77,14 @@ func (r *GormTeamRepository) Create(ctx context.Context, team *Team) error {
 		return errors.Wrap(err, "fail to store team in DB")
 	}
 	return nil
+}
+
+// List lists all teams for a given race
+func (r *GormTeamRepository) List(ctx context.Context, raceID uuid.UUID) ([]Team, error) {
+	result := make([]Team, 0)
+	db := r.db.Where("race_id = ?", raceID).Order("bib_number ASC").Find(&result)
+	if err := db.Error; err != nil {
+		return result, errors.Wrap(err, "fail to list teams")
+	}
+	return result, nil
 }

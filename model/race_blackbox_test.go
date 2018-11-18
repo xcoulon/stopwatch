@@ -178,10 +178,10 @@ func (s *RaceRepositoryTestSuite) TestListRacesMultipleResults() {
 	// given
 	ctx := context.Background()
 	race1 := model.Race{
-		Name: fmt.Sprintf("race %s", uuid.NewV4()),
+		Name: fmt.Sprintf("race foo %s", uuid.NewV4()),
 	}
 	race2 := model.Race{
-		Name: fmt.Sprintf("race %s", uuid.NewV4()),
+		Name: fmt.Sprintf("race bar %s", uuid.NewV4()),
 	}
 	err := s.App.Races().Create(ctx, &race1)
 	require.NoError(s.T(), err)
@@ -191,5 +191,8 @@ func (s *RaceRepositoryTestSuite) TestListRacesMultipleResults() {
 	races, err := s.App.Races().List(ctx)
 	// then
 	require.NoError(s.T(), err)
-	assert.Len(s.T(), races, 2)
+	require.Len(s.T(), races, 2)
+	// verify result ordering
+	assert.Equal(s.T(), race2, races[0])
+	assert.Equal(s.T(), race1, races[1])
 }

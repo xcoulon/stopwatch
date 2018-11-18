@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/vatriathlon/stopwatch/configuration"
@@ -27,7 +28,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 	// given
 	ctx := context.Background()
 	race := model.Race{
-		Name: fmt.Sprintf("team %s", uuid.NewV4()),
+		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
 	// when
 	err := s.App.Races().Create(ctx, &race)
@@ -79,6 +80,27 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 			require.Error(t, err)
 		})
 
+		t.Run("duplicate bib number", func(t *testing.T) {
+			// given
+			number := uuid.NewV4().String()
+			team1 := model.Team{
+				Name:      fmt.Sprintf("team foo %s", number),
+				BibNumber: number,
+				RaceID:    race.ID,
+			}
+			err := s.App.Teams().Create(ctx, &team1)
+			require.NoError(t, err)
+			// when
+			team2 := model.Team{
+				Name:      fmt.Sprintf("team bar %s", number),
+				BibNumber: number,
+				RaceID:    race.ID,
+			}
+			err = s.App.Teams().Create(ctx, &team2)
+			// then
+			require.Error(t, err)
+		})
+
 		t.Run("missing race ID", func(t *testing.T) {
 			// given
 			number := uuid.NewV4().String()
@@ -92,5 +114,76 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 			require.Error(t, err)
 		})
 	})
+}
 
+func (s *TeamRepositoryTestSuite) TestListTeamsNoResult() {
+	// given
+	ctx := context.Background()
+	race := model.Race{
+		Name: fmt.Sprintf("race %s", uuid.NewV4()),
+	}
+	err := s.App.Races().Create(ctx, &race)
+	require.NoError(s.T(), err)
+	// when
+	teams, err := s.App.Teams().List(ctx, race.ID)
+	// then
+	require.NoError(s.T(), err)
+	assert.Empty(s.T(), teams)
+}
+
+func (s *TeamRepositoryTestSuite) TestListTeamsSingleResult() {
+	// given
+	ctx := context.Background()
+	race := model.Race{
+		Name: fmt.Sprintf("race %s", uuid.NewV4()),
+	}
+	err := s.App.Races().Create(ctx, &race)
+	require.NoError(s.T(), err)
+	bibNumber := uuid.NewV4().String()
+	team := model.Team{
+		Name:      fmt.Sprintf("team foo %s", bibNumber),
+		BibNumber: bibNumber,
+		RaceID:    race.ID,
+	}
+	err = s.App.Teams().Create(ctx, &team)
+	require.NoError(s.T(), err)
+	// when
+	teams, err := s.App.Teams().List(ctx, race.ID)
+	// then
+	require.NoError(s.T(), err)
+	require.Len(s.T(), teams, 1)
+	assert.Equal(s.T(), team, teams[0])
+}
+
+func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
+	// given
+	ctx := context.Background()
+	race := model.Race{
+		Name: fmt.Sprintf("race %s", uuid.NewV4()),
+	}
+	err := s.App.Races().Create(ctx, &race)
+	require.NoError(s.T(), err)
+	bibNumber1 := fmt.Sprintf("2 %s", uuid.NewV4().String())
+	team1 := model.Team{
+		Name:      fmt.Sprintf("team foo %s", bibNumber1),
+		BibNumber: bibNumber1,
+		RaceID:    race.ID,
+	}
+	err = s.App.Teams().Create(ctx, &team1)
+	require.NoError(s.T(), err)
+	bibNumber2 := fmt.Sprintf("1 %s", uuid.NewV4().String())
+	team2 := model.Team{
+		Name:      fmt.Sprintf("team bar %s", bibNumber2),
+		BibNumber: bibNumber2,
+		RaceID:    race.ID,
+	}
+	err = s.App.Teams().Create(ctx, &team2)
+	require.NoError(s.T(), err)
+	// when
+	teams, err := s.App.Teams().List(ctx, race.ID)
+	// then
+	require.NoError(s.T(), err)
+	require.Len(s.T(), teams, 2)
+	assert.Equal(s.T(), team2, teams[0])
+	assert.Equal(s.T(), team1, teams[1])
 }
