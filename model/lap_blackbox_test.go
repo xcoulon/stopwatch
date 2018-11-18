@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"github.com/vatriathlon/stopwatch/application"
 	"github.com/vatriathlon/stopwatch/configuration"
 	testsuite "github.com/vatriathlon/stopwatch/test/suite"
 )
@@ -25,22 +24,16 @@ func TestLapRepository(t *testing.T) {
 
 type LapRepositoryTestSuite struct {
 	testsuite.DBTestSuite
-	app application.Application
-}
-
-func (s *LapRepositoryTestSuite) SetupSuite() {
-	s.DBTestSuite.SetupSuite()
-	s.app = application.NewGormApplication(s.DB)
 }
 
 func (s *LapRepositoryTestSuite) TestCreateLap() {
+	// given
 	ctx := context.Background()
 	now := time.Now()
 	race := model.Race{
-		Name:      fmt.Sprintf("race-%s", uuid.NewV4()),
-		StartTime: now,
+		Name: fmt.Sprintf("race-%s", uuid.NewV4()),
 	}
-	err := s.app.Races().Create(ctx, &race)
+	err := s.App.Races().Create(ctx, &race)
 	require.NoError(s.T(), err)
 
 	team1 := model.Team{
@@ -48,14 +41,14 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 		BibNumber: "1",
 		RaceID:    race.ID,
 	}
-	err = s.app.Teams().Create(ctx, &team1)
+	err = s.App.Teams().Create(ctx, &team1)
 	require.NoError(s.T(), err)
 	team2 := model.Team{
 		Name:      "bar2",
 		BibNumber: "2",
 		RaceID:    race.ID,
 	}
-	err = s.app.Teams().Create(ctx, &team2)
+	err = s.App.Teams().Create(ctx, &team2)
 	require.NoError(s.T(), err)
 
 	s.T().Run("ok", func(t *testing.T) {
@@ -66,7 +59,7 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 			Time:   now.Add(1 * time.Minute),
 		}
 		// when
-		err := s.app.Laps().Create(ctx, &lap1)
+		err := s.App.Laps().Create(ctx, &lap1)
 		// then
 		require.NoError(t, err)
 		require.NotEqual(t, lap1.ID, uuid.Nil)
@@ -81,7 +74,7 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 				Time:   now.Add(1 * time.Minute),
 			}
 			// when
-			err := s.app.Laps().Create(ctx, &lap1)
+			err := s.App.Laps().Create(ctx, &lap1)
 			// then
 			require.Error(t, err)
 			assert.Equal(t, err.Error(), "missing 'RaceID' field")
@@ -94,7 +87,7 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 				Time:   now.Add(1 * time.Minute),
 			}
 			// when
-			err := s.app.Laps().Create(ctx, &lap1)
+			err := s.App.Laps().Create(ctx, &lap1)
 			// then
 			require.Error(t, err)
 			assert.Equal(t, err.Error(), "missing 'TeamID' field")

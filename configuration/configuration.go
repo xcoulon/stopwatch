@@ -34,7 +34,6 @@ const (
 	varCleanTestDataEnabled = "clean.test.data"
 	varDBLogsEnabled        = "enable.db.logs"
 	varLogLevel             = "log.level"
-
 	// Postgres
 	varPostgresHost                 = "postgres.host"
 	varPostgresPort                 = "postgres.port"
@@ -69,7 +68,12 @@ func New() (*Configuration, error) {
 	c.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	c.v.SetTypeByDefaultValue(true)
 	c.setConfigDefaults()
-
+	level, err := log.ParseLevel(c.GetLogLevel())
+	if err != nil {
+		log.Warnf("cannot set logger level to '%s': %v", c.GetLogLevel(), err)
+	} else {
+		log.SetLevel(level)
+	}
 	return c, nil
 }
 

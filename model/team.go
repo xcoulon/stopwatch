@@ -41,7 +41,6 @@ func (t Team) Equal(o Equaler) bool {
 // TeamRepository provides functions to create and view teams
 type TeamRepository interface {
 	Create(ctx context.Context, team *Team) error
-	// ListByTeamID(ctx context.Context, identityID uuid.UUID, start int, limit int) ([]Team, error)
 }
 
 // NewTeamRepository creates a new GormTeamRepository

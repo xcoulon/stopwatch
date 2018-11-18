@@ -42,7 +42,6 @@ func (l Lap) Equal(o Equaler) bool {
 // LapRepository provides functions to create and view team laps
 type LapRepository interface {
 	Create(ctx context.Context, lap *Lap) error
-	// ListByTeamID(ctx context.Context, identityID uuid.UUID, start int, limit int) ([]Lap, error)
 }
 
 // NewLapRepository creates a new GormLapRepository
@@ -62,7 +61,7 @@ type GormLapRepository struct {
 func (r *GormLapRepository) Create(ctx context.Context, lap *Lap) error {
 	// check values
 	if lap == nil {
-		return errors.New("missing lap to persist")
+		return errors.New("missing lap to create")
 	}
 	if lap.RaceID == uuid.Nil {
 		return errors.New("missing 'RaceID' field")

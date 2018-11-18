@@ -21,6 +21,7 @@ func usage(w io.Writer) {
 }
 
 var completer = readline.NewPrefixCompleter(
+	readline.PcItem("list"),
 	readline.PcItem("start"),
 	readline.PcItem("stop"),
 	readline.PcItem("exit"),
