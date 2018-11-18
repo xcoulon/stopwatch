@@ -31,7 +31,7 @@ func (s *RaceRepositoryTestSuite) TestCreateRace() {
 	s.T().Run("ok", func(t *testing.T) {
 		// given
 		race := model.Race{
-			Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+			Name: fmt.Sprintf("race %s", uuid.NewV4()),
 		}
 		// when
 		err := s.App.Races().Create(ctx, &race)
@@ -62,7 +62,7 @@ func (s *RaceRepositoryTestSuite) TestStartRace() {
 	s.T().Run("ok", func(t *testing.T) {
 		// given
 		race := model.Race{
-			Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+			Name: fmt.Sprintf("race %s", uuid.NewV4()),
 		}
 		err := s.App.Races().Create(ctx, &race)
 		require.NoError(t, err)
@@ -78,7 +78,7 @@ func (s *RaceRepositoryTestSuite) TestStartRace() {
 		t.Run("already started", func(t *testing.T) {
 			// given
 			race := model.Race{
-				Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+				Name: fmt.Sprintf("race %s", uuid.NewV4()),
 			}
 			err := s.App.Races().Create(ctx, &race)
 			require.NoError(t, err)
@@ -99,7 +99,7 @@ func (s *RaceRepositoryTestSuite) TestEndRace() {
 	s.T().Run("ok", func(t *testing.T) {
 		// given
 		race := model.Race{
-			Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+			Name: fmt.Sprintf("race %s", uuid.NewV4()),
 		}
 		err := s.App.Races().Create(ctx, &race)
 		require.NoError(t, err)
@@ -117,7 +117,7 @@ func (s *RaceRepositoryTestSuite) TestEndRace() {
 		t.Run("not started yet", func(t *testing.T) {
 			// given
 			race := model.Race{
-				Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+				Name: fmt.Sprintf("race %s", uuid.NewV4()),
 			}
 			err := s.App.Races().Create(ctx, &race)
 			require.NoError(t, err)
@@ -132,7 +132,7 @@ func (s *RaceRepositoryTestSuite) TestEndRace() {
 		t.Run("already ended", func(t *testing.T) {
 			// given
 			race := model.Race{
-				Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+				Name: fmt.Sprintf("race %s", uuid.NewV4()),
 			}
 			err := s.App.Races().Create(ctx, &race)
 			require.NoError(t, err)
@@ -163,7 +163,7 @@ func (s *RaceRepositoryTestSuite) TestListRacesSingleResult() {
 	// given
 	ctx := context.Background()
 	race1 := model.Race{
-		Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
 	err := s.App.Races().Create(ctx, &race1)
 	require.NoError(s.T(), err)
@@ -178,10 +178,10 @@ func (s *RaceRepositoryTestSuite) TestListRacesMultipleResults() {
 	// given
 	ctx := context.Background()
 	race1 := model.Race{
-		Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
 	race2 := model.Race{
-		Name: fmt.Sprintf("foo race %s", uuid.NewV4()),
+		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
 	err := s.App.Races().Create(ctx, &race1)
 	require.NoError(s.T(), err)

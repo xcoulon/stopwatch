@@ -68,6 +68,9 @@ func (r *GormTeamRepository) Create(ctx context.Context, team *Team) error {
 	if team.Name == "" {
 		return errors.New("missing 'Name' field")
 	}
+	if team.BibNumber == "" {
+		return errors.New("missing 'BibNumber' field")
+	}
 	db := r.db.Create(team)
 	if err := db.Error; err != nil {
 		return errors.Wrap(err, "fail to store team in DB")
