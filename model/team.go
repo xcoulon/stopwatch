@@ -14,6 +14,7 @@ type Team struct {
 	BibNumber string    `gorm:"column:bib_number"`
 	Name      string
 	RaceID    uuid.UUID `sql:"type:uuid" gorm:"column:race_id"`
+	Laps      []Lap
 }
 
 const (

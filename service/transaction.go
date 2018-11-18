@@ -1,7 +1,6 @@
-package application
+package service
 
 import (
-	"runtime/debug"
 	"time"
 
 	"github.com/fabric8-services/fabric8-common/log"
@@ -9,19 +8,27 @@ import (
 	"github.com/pkg/errors"
 )
 
-var databaseTransactionTimeout = 5 * time.Minute
+var databaseTransactionTimeout = 1 * time.Minute
 
-// SetDatabaseTransactionTimeout sets the global timeout variable to the given
-// duration.
 func SetDatabaseTransactionTimeout(t time.Duration) {
 	databaseTransactionTimeout = t
 }
 
+func DatabaseTransactionTimeout() time.Duration {
+	return databaseTransactionTimeout
+}
+
+// TransactionManager manages the lifecycle of a database transaction. The transactional resources (such as repositories)
+// created for the transaction object make changes inside the transaction
+type TransactionManager interface {
+	BeginTransaction() (Transaction, error)
+}
+
 // Transactional executes the given function in a transaction. If todo returns an error, the transaction is rolled back
-func Transactional(db DB, todo func(f Application) error) error {
+func Transactional(svc *GormService, todo func(r Repositories) error) error {
 	var tx Transaction
 	var err error
-	if tx, err = db.BeginTransaction(); err != nil {
+	if tx, err = svc.BeginTransaction(); err != nil {
 		log.Error(nil, map[string]interface{}{
 			"err": err,
 		}, "database BeginTransaction failed!")
@@ -33,10 +40,10 @@ func Transactional(db DB, todo func(f Application) error) error {
 		errorChan := make(chan error, 1)
 		txTimeout := time.After(databaseTransactionTimeout)
 
-		go func(tx Transaction) {
+		go func(r Repositories) {
 			defer func() {
 				if err := recover(); err != nil {
-					errorChan <- errors.Errorf("recovered %v. stack: %s", err, debug.Stack())
+					errorChan <- errors.Errorf("unknown error: %v", err)
 				}
 			}()
 			errorChan <- todo(tx)
@@ -45,7 +52,7 @@ func Transactional(db DB, todo func(f Application) error) error {
 		select {
 		case err := <-errorChan:
 			if err != nil {
-				log.Debug(nil, map[string]interface{}{"error": err}, "Rolling back the transaction...")
+				log.Debug(nil, nil, "Rolling back the transaction...")
 				tx.Rollback()
 				log.Error(nil, map[string]interface{}{
 					"err": err,
@@ -59,7 +66,6 @@ func Transactional(db DB, todo func(f Application) error) error {
 		case <-txTimeout:
 			log.Debug(nil, nil, "Rolling back the transaction...")
 			tx.Rollback()
-			log.Error(nil, nil, "database transaction timeout!")
 			return errors.New("database transaction timeout")
 		}
 	}()

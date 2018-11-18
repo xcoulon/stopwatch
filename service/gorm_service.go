@@ -1,4 +1,4 @@
-package application
+package service
 
 import (
 	"fmt"
@@ -33,48 +33,49 @@ const (
 	TXIsoLevelSerializable
 )
 
-var _ Application = &GormApplication{}
+var _ Service = &GormService{}
 
-var _ Application = &GormTransaction{}
+var _ TransactionManager = &GormService{}
 
-// NewGormApplication returns a new GormApplication object that supports transactions
-func NewGormApplication(db *gorm.DB) *GormApplication {
-	return &GormApplication{GormBase{db}, ""}
+// NewGormService returns a new GormService object that supports transactions
+func NewGormService(db *gorm.DB) *GormService {
+	return &GormService{db: db, txIsoLevel: ""}
 }
 
-// GormBase is a base struct for gorm implementations of db & transaction
-type GormBase struct {
-	db *gorm.DB
+type Service interface {
+}
+
+type GormService struct {
+	TransactionManager
+	txIsoLevel string
+	db         *gorm.DB
+}
+
+// Transaction represents an existing transaction.  It provides access to transactional resources, plus methods to commit or roll back the transaction
+type Transaction interface {
+	Repositories
+	Commit() error
+	Rollback() error
+}
+
+// Repositories the repositories accessor
+type Repositories interface {
+	Races() model.RaceRepository
+	Teams() model.TeamRepository
+	Laps() model.LapRepository
 }
 
 type GormTransaction struct {
-	GormBase
+	GormRepositories
 }
 
-type GormApplication struct {
-	GormBase
-	txIsoLevel string
-}
-
-func (g *GormBase) Races() model.RaceRepository {
-	return model.NewRaceRepository(g.db)
-}
-
-func (g *GormBase) Teams() model.TeamRepository {
-	return model.NewTeamRepository(g.db)
-}
-
-func (g *GormBase) Laps() model.LapRepository {
-	return model.NewLapRepository(g.db)
-}
-
-func (g *GormBase) DB() *gorm.DB {
-	return g.db
+func (g *GormService) Repositories() Repositories {
+	return &GormRepositories{db: g.db}
 }
 
 // SetTransactionIsolationLevel sets the isolation level for
 // See also https://www.postgresql.org/docs/9.3/static/sql-set-transaction.html
-func (g *GormApplication) SetTransactionIsolationLevel(level TXIsoLevel) error {
+func (g *GormService) SetTransactionIsolationLevel(level TXIsoLevel) error {
 	switch level {
 	case TXIsoLevelReadCommitted:
 		g.txIsoLevel = "READ COMMITTED"
@@ -91,7 +92,7 @@ func (g *GormApplication) SetTransactionIsolationLevel(level TXIsoLevel) error {
 }
 
 // BeginTransaction implements TransactionSupport
-func (g *GormApplication) BeginTransaction() (Transaction, error) {
+func (g *GormService) BeginTransaction() (Transaction, error) {
 	tx := g.db.Begin()
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -101,9 +102,30 @@ func (g *GormApplication) BeginTransaction() (Transaction, error) {
 		if tx.Error != nil {
 			return nil, tx.Error
 		}
-		return &GormTransaction{GormBase{tx}}, nil
+		return &GormTransaction{GormRepositories{tx}}, nil
 	}
-	return &GormTransaction{GormBase{tx}}, nil
+	return &GormTransaction{GormRepositories{tx}}, nil
+}
+
+// GormRepositories is a base struct for gorm implementations of db & transaction
+type GormRepositories struct {
+	db *gorm.DB
+}
+
+func (g *GormRepositories) Races() model.RaceRepository {
+	return model.NewRaceRepository(g.db)
+}
+
+func (g *GormRepositories) Teams() model.TeamRepository {
+	return model.NewTeamRepository(g.db)
+}
+
+func (g *GormRepositories) Laps() model.LapRepository {
+	return model.NewLapRepository(g.db)
+}
+
+func (g *GormRepositories) DB() *gorm.DB {
+	return g.db
 }
 
 // Commit implements TransactionSupport

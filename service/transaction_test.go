@@ -1,15 +1,14 @@
-package application_test
+package service_test
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/fabric8-services/admin-console/configuration"
+	"github.com/vatriathlon/stopwatch/configuration"
 
-	"github.com/fabric8-services/admin-console/application"
-	"github.com/fabric8-services/fabric8-common/resource"
-	testsuite "github.com/fabric8-services/fabric8-common/test/suite"
+	"github.com/vatriathlon/stopwatch/service"
+	testsuite "github.com/vatriathlon/stopwatch/test/suite"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,11 +17,10 @@ import (
 
 type TransactionTestSuite struct {
 	testsuite.DBTestSuite
-	gormApplication *application.GormApplication
+	gormService *service.GormService
 }
 
 func TestRunTransaction(t *testing.T) {
-	resource.Require(t, resource.Database)
 	config, err := configuration.New()
 	require.NoError(t, err)
 	suite.Run(t, &TransactionTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
@@ -30,14 +28,14 @@ func TestRunTransaction(t *testing.T) {
 
 func (s *TransactionTestSuite) SetupTest() {
 	s.DBTestSuite.SetupTest()
-	s.gormApplication = application.NewGormApplication(s.DB)
+	s.gormService = service.NewGormService(s.DB)
 }
 
 func (s *TransactionTestSuite) TransactionTestSuiteInTime() {
 	// given
 	computeTime := 10 * time.Second
 	// then
-	err := application.Transactional(s.gormApplication, func(appl application.Application) error {
+	err := service.Transactional(s.gormService, func(r service.Repositories) error {
 		time.Sleep(computeTime)
 		return nil
 	})
@@ -48,9 +46,9 @@ func (s *TransactionTestSuite) TransactionTestSuiteInTime() {
 func (s *TransactionTestSuite) TransactionTestSuiteOut() {
 	// given
 	computeTime := 6 * time.Minute
-	application.SetDatabaseTransactionTimeout(5 * time.Second)
+	service.SetDatabaseTransactionTimeout(5 * time.Second)
 	// then
-	err := application.Transactional(s.gormApplication, func(appl application.Application) error {
+	err := service.Transactional(s.gormService, func(r service.Repositories) error {
 		time.Sleep(computeTime)
 		return nil
 	})
@@ -61,7 +59,7 @@ func (s *TransactionTestSuite) TransactionTestSuiteOut() {
 
 func (s *TransactionTestSuite) TransactionTestSuitePanicAndRecoverWithStack() {
 	// then
-	err := application.Transactional(s.gormApplication, func(appl application.Application) error {
+	err := service.Transactional(s.gormService, func(r service.Repositories) error {
 		bar := func(a, b interface{}) {
 			// This comparison while legal at compile time will cause a runtime
 			// error like this: "comparing uncomparable type

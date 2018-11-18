@@ -18,6 +18,9 @@ type Race struct {
 	endTime   time.Time
 }
 
+// the "undefined" race
+var UndefinedRace = Race{}
+
 const (
 	racesTableName = "race"
 )
@@ -70,6 +73,7 @@ func (r Race) Equal(o Equaler) bool {
 // RaceRepository provides functions to create and view races
 type RaceRepository interface {
 	Create(ctx context.Context, race *Race) error
+	FindByName(ctx context.Context, name string) (Race, error)
 	Start(ctx context.Context, race *Race) error
 	End(ctx context.Context, race *Race) error
 	List(ctx context.Context) ([]Race, error)
@@ -105,6 +109,16 @@ func (r *GormRaceRepository) Create(ctx context.Context, race *Race) error {
 		return errors.Wrap(err, "fail to store race in DB")
 	}
 	return nil
+}
+
+// FindByName find the race with the given name. Returns an error if none was found
+func (r *GormRaceRepository) FindByName(ctx context.Context, name string) (Race, error) {
+	var result Race
+	db := r.db.First(&result, "name = ?", name)
+	if err := db.Error; err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 // Start marks the given race as started (now)

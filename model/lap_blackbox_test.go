@@ -29,11 +29,14 @@ type LapRepositoryTestSuite struct {
 func (s *LapRepositoryTestSuite) TestCreateLap() {
 	// given
 	ctx := context.Background()
+	raceRepo := model.NewRaceRepository(s.DB)
+	teamRepo := model.NewTeamRepository(s.DB)
+	lapRepo := model.NewLapRepository(s.DB)
 	now := time.Now()
 	race := model.Race{
 		Name: fmt.Sprintf("race-%s", uuid.NewV4()),
 	}
-	err := s.App.Races().Create(ctx, &race)
+	err := raceRepo.Create(ctx, &race)
 	require.NoError(s.T(), err)
 
 	team1 := model.Team{
@@ -41,14 +44,14 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 		BibNumber: "1",
 		RaceID:    race.ID,
 	}
-	err = s.App.Teams().Create(ctx, &team1)
+	err = teamRepo.Create(ctx, &team1)
 	require.NoError(s.T(), err)
 	team2 := model.Team{
 		Name:      "bar2",
 		BibNumber: "2",
 		RaceID:    race.ID,
 	}
-	err = s.App.Teams().Create(ctx, &team2)
+	err = teamRepo.Create(ctx, &team2)
 	require.NoError(s.T(), err)
 
 	s.T().Run("ok", func(t *testing.T) {
@@ -59,7 +62,7 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 			Time:   now.Add(1 * time.Minute),
 		}
 		// when
-		err := s.App.Laps().Create(ctx, &lap1)
+		err := lapRepo.Create(ctx, &lap1)
 		// then
 		require.NoError(t, err)
 		require.NotEqual(t, lap1.ID, uuid.Nil)
@@ -74,7 +77,7 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 				Time:   now.Add(1 * time.Minute),
 			}
 			// when
-			err := s.App.Laps().Create(ctx, &lap1)
+			err := lapRepo.Create(ctx, &lap1)
 			// then
 			require.Error(t, err)
 			assert.Equal(t, err.Error(), "missing 'RaceID' field")
@@ -87,7 +90,7 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 				Time:   now.Add(1 * time.Minute),
 			}
 			// when
-			err := s.App.Laps().Create(ctx, &lap1)
+			err := lapRepo.Create(ctx, &lap1)
 			// then
 			require.Error(t, err)
 			assert.Equal(t, err.Error(), "missing 'TeamID' field")

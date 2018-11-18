@@ -3,8 +3,6 @@ package suite
 import (
 	"context"
 
-	"github.com/vatriathlon/stopwatch/application"
-
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq" // need to import postgres driver
 	log "github.com/sirupsen/logrus"
@@ -34,7 +32,6 @@ type DBTestSuite struct {
 	config     DBTestSuiteConfiguration
 	Ctx        context.Context
 	DB         *gorm.DB
-	App        application.Application
 	CleanTest  func()
 	CleanSuite func()
 }
@@ -52,7 +49,6 @@ func (s *DBTestSuite) SetupSuite() {
 	// configures the log mode for the SQL queries (by default, disabled)
 	s.DB.LogMode(s.config.IsDBLogsEnabled())
 	s.CleanSuite = DeleteCreatedEntities(s.DB)
-	s.App = application.NewGormApplication(s.DB)
 }
 
 // SetupTest implements suite.SetupTest

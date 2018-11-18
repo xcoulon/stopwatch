@@ -27,11 +27,13 @@ type TeamRepositoryTestSuite struct {
 func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 	// given
 	ctx := context.Background()
+	raceRepo := model.NewRaceRepository(s.DB)
+	teamRepo := model.NewTeamRepository(s.DB)
 	race := model.Race{
 		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
 	// when
-	err := s.App.Races().Create(ctx, &race)
+	err := raceRepo.Create(ctx, &race)
 	// then
 	require.NoError(s.T(), err)
 
@@ -44,7 +46,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 			RaceID:    race.ID,
 		}
 		// when
-		err := s.App.Teams().Create(ctx, &team)
+		err := teamRepo.Create(ctx, &team)
 		// then
 		require.NoError(t, err)
 		require.NotEqual(t, team.ID, uuid.Nil)
@@ -61,7 +63,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 				RaceID:    race.ID,
 			}
 			// when
-			err := s.App.Teams().Create(ctx, &team)
+			err := teamRepo.Create(ctx, &team)
 			// then
 			require.Error(t, err)
 		})
@@ -75,7 +77,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 				RaceID:    race.ID,
 			}
 			// when
-			err := s.App.Teams().Create(ctx, &team)
+			err := teamRepo.Create(ctx, &team)
 			// then
 			require.Error(t, err)
 		})
@@ -88,7 +90,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 				BibNumber: number,
 				RaceID:    race.ID,
 			}
-			err := s.App.Teams().Create(ctx, &team1)
+			err := teamRepo.Create(ctx, &team1)
 			require.NoError(t, err)
 			// when
 			team2 := model.Team{
@@ -96,7 +98,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 				BibNumber: number,
 				RaceID:    race.ID,
 			}
-			err = s.App.Teams().Create(ctx, &team2)
+			err = teamRepo.Create(ctx, &team2)
 			// then
 			require.Error(t, err)
 		})
@@ -109,7 +111,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 				BibNumber: number,
 			}
 			// when
-			err := s.App.Teams().Create(ctx, &team)
+			err := teamRepo.Create(ctx, &team)
 			// then
 			require.Error(t, err)
 		})
@@ -119,13 +121,15 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 func (s *TeamRepositoryTestSuite) TestListTeamsNoResult() {
 	// given
 	ctx := context.Background()
+	raceRepo := model.NewRaceRepository(s.DB)
+	teamRepo := model.NewTeamRepository(s.DB)
 	race := model.Race{
 		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
-	err := s.App.Races().Create(ctx, &race)
+	err := raceRepo.Create(ctx, &race)
 	require.NoError(s.T(), err)
 	// when
-	teams, err := s.App.Teams().List(ctx, race.ID)
+	teams, err := teamRepo.List(ctx, race.ID)
 	// then
 	require.NoError(s.T(), err)
 	assert.Empty(s.T(), teams)
@@ -134,10 +138,12 @@ func (s *TeamRepositoryTestSuite) TestListTeamsNoResult() {
 func (s *TeamRepositoryTestSuite) TestListTeamsSingleResult() {
 	// given
 	ctx := context.Background()
+	raceRepo := model.NewRaceRepository(s.DB)
+	teamRepo := model.NewTeamRepository(s.DB)
 	race := model.Race{
 		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
-	err := s.App.Races().Create(ctx, &race)
+	err := raceRepo.Create(ctx, &race)
 	require.NoError(s.T(), err)
 	bibNumber := uuid.NewV4().String()
 	team := model.Team{
@@ -145,10 +151,10 @@ func (s *TeamRepositoryTestSuite) TestListTeamsSingleResult() {
 		BibNumber: bibNumber,
 		RaceID:    race.ID,
 	}
-	err = s.App.Teams().Create(ctx, &team)
+	err = teamRepo.Create(ctx, &team)
 	require.NoError(s.T(), err)
 	// when
-	teams, err := s.App.Teams().List(ctx, race.ID)
+	teams, err := teamRepo.List(ctx, race.ID)
 	// then
 	require.NoError(s.T(), err)
 	require.Len(s.T(), teams, 1)
@@ -158,10 +164,12 @@ func (s *TeamRepositoryTestSuite) TestListTeamsSingleResult() {
 func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 	// given
 	ctx := context.Background()
+	raceRepo := model.NewRaceRepository(s.DB)
+	teamRepo := model.NewTeamRepository(s.DB)
 	race := model.Race{
 		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
-	err := s.App.Races().Create(ctx, &race)
+	err := raceRepo.Create(ctx, &race)
 	require.NoError(s.T(), err)
 	bibNumber1 := fmt.Sprintf("2 %s", uuid.NewV4().String())
 	team1 := model.Team{
@@ -169,7 +177,7 @@ func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 		BibNumber: bibNumber1,
 		RaceID:    race.ID,
 	}
-	err = s.App.Teams().Create(ctx, &team1)
+	err = teamRepo.Create(ctx, &team1)
 	require.NoError(s.T(), err)
 	bibNumber2 := fmt.Sprintf("1 %s", uuid.NewV4().String())
 	team2 := model.Team{
@@ -177,10 +185,10 @@ func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 		BibNumber: bibNumber2,
 		RaceID:    race.ID,
 	}
-	err = s.App.Teams().Create(ctx, &team2)
+	err = teamRepo.Create(ctx, &team2)
 	require.NoError(s.T(), err)
 	// when
-	teams, err := s.App.Teams().List(ctx, race.ID)
+	teams, err := teamRepo.List(ctx, race.ID)
 	// then
 	require.NoError(s.T(), err)
 	require.Len(s.T(), teams, 2)
