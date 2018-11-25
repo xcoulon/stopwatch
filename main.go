@@ -2,40 +2,21 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"runtime"
-	"strconv"
-	"strings"
 	"time"
+
+	"github.com/jinzhu/gorm"
+
+	"github.com/vatriathlon/stopwatch/service"
+
+	"github.com/vatriathlon/stopwatch/configuration"
+
+	"github.com/vatriathlon/stopwatch/cmd"
 
 	"github.com/chzyer/readline"
 	_ "github.com/lib/pq"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
-
-func usage(w io.Writer) {
-	io.WriteString(w, "commands:\n")
-	io.WriteString(w, completer.Tree("    "))
-}
-
-var completer = readline.NewPrefixCompleter(
-	readline.PcItem("list"),
-	readline.PcItem("start"),
-	readline.PcItem("stop"),
-	readline.PcItem("exit"),
-	readline.PcItem("status"),
-)
-
-func filterInput(r rune) (rune, bool) {
-	switch r {
-	// block CtrlZ feature
-	case readline.CharCtrlZ:
-		return r, false
-	}
-	return r, true
-}
 
 // initializes the level for the logger, using the optional '-debug' flag to activate the logs in 'debug' level.
 // Other tests must import this 'test' package even if unused, using:
@@ -49,14 +30,25 @@ func init() {
 }
 
 func main() {
+	config, err := configuration.New()
+	if err != nil {
+		panic(err)
+	}
 	l, err := readline.NewEx(&readline.Config{
-		Prompt:       "\033[31m»\033[0m ",
-		HistoryFile:  "/tmp/vatriathlon-stopwatch.tmp",
-		AutoComplete: completer,
+		Prompt:      "\033[31m»\033[0m ",
+		HistoryFile: "/tmp/vatriathlon-stopwatch.tmp",
+		// AutoComplete: cmd.Completer,
 		// InterruptPrompt: "^C",
-		EOFPrompt:           "exit",
-		HistorySearchFold:   true,
-		FuncFilterInputRune: filterInput,
+		EOFPrompt:         "exit",
+		HistorySearchFold: true,
+		FuncFilterInputRune: func(r rune) (rune, bool) {
+			switch r {
+			// block CtrlZ feature
+			case readline.CharCtrlZ:
+				return r, false
+			}
+			return r, true
+		},
 	})
 	if err != nil {
 		panic(err)
@@ -75,6 +67,22 @@ func main() {
 		l.Close()
 	}()
 
+	var db *gorm.DB
+	for {
+		db, err = gorm.Open("postgres", config.GetPostgresConfigString())
+		if err != nil {
+			db.Close()
+			log.Errorf("ERROR: Unable to open connection to database %v", err)
+			log.Infof("Retrying to connect in %v...", config.GetPostgresConnectionRetrySleep())
+			time.Sleep(config.GetPostgresConnectionRetrySleep())
+		} else {
+			defer db.Close()
+			break
+		}
+	}
+	db.LogMode(config.IsDBLogsEnabled())
+
+	svc := service.NewApplicationService(db)
 	log.SetOutput(l.Stderr())
 	// main loop that catches the commands
 	for {
@@ -85,38 +93,6 @@ func main() {
 		} else if err != nil {
 			log.Warn("ignoring error of type '%T'\n", err)
 		}
-		line = strings.TrimSpace(line)
-		switch {
-		case line == "start":
-			log.Warn("started ⏱")
-			now := time.Now()
-			startTime = &now
-			go func() {
-				for range time.Tick(time.Second) {
-					duration, _ := currentDuration()
-					log.Infof("%s", duration)
-				}
-			}()
-		case line == "stop":
-			println("stopped ⏱")
-		case line == "help":
-			usage(l.Stderr())
-		case line == "exit":
-			log.Error("need a prompt to confirm! (need to 'stop' first?)") //TODO
-			runtime.Goexit()
-		default:
-			log.Println("you said:", strconv.Quote(line))
-		}
+		cmd.Execute(line, svc, l)
 	}
-}
-
-var startTime *time.Time
-
-func currentDuration() (time.Time, error) {
-	if startTime == nil {
-		return time.Time{}, errors.New("stopwach did not start yet")
-	}
-	now := time.Now()
-	duration := now.Sub(*startTime)
-	return time.Parse("03:04:05", strconv.Itoa(int(duration)))
 }

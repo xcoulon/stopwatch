@@ -14,11 +14,15 @@ import (
 type Race struct {
 	ID        uuid.UUID `sql:"type:uuid default uuid_generate_v4()" gorm:"primary_key;column:race_id"`
 	Name      string
-	startTime time.Time
-	endTime   time.Time
+	StartTime time.Time
+	EndTime   time.Time
 }
 
-// the "undefined" race
+const (
+	raceTimeFmt = "2006-01-02 15:04:05"
+)
+
+// UndefinedRace the "undefined" race
 var UndefinedRace = Race{}
 
 const (
@@ -32,29 +36,29 @@ func (r *Race) TableName() string {
 
 // IsStarted returns 'true' if the race has already started, false otherwise.
 func (r *Race) IsStarted() bool {
-	log.Debugf("race started at: %v (%t)", r.startTime, r.startTime.IsZero())
-	return !r.startTime.IsZero()
+	log.Debugf("race started at: %v (is zero=%t)", r.StartTime.Format(raceTimeFmt), r.StartTime.IsZero())
+	return !r.StartTime.IsZero()
 }
 
-// StartTime returns the start time of the race, or empty string if it has not started yet
-func (r *Race) StartTime() string {
-	if r.startTime.IsZero() {
-		return ""
+// StartTimeStr returns the start time as a human readable string, or "" if the race has not started yet
+func (r *Race) StartTimeStr() string {
+	if r.IsStarted() {
+		return r.StartTime.Format(raceTimeFmt)
 	}
-	return r.startTime.Format("2006-01-02 15:04:05")
+	return ""
 }
 
 // IsEnded returns 'true' if the race has already ended, false otherwise.
 func (r *Race) IsEnded() bool {
-	return !r.endTime.IsZero()
+	return !r.EndTime.IsZero()
 }
 
-// EndTime returns the end time of the race, or empty string if it has not ended yet
-func (r *Race) EndTime() string {
-	if r.endTime.IsZero() {
-		return ""
+// EndTimeStr returns the end time as a human readable string, or "" if the race has not ended yet
+func (r *Race) EndTimeStr() string {
+	if r.IsEnded() {
+		return r.EndTime.Format(raceTimeFmt)
 	}
-	return r.endTime.Format("2006-01-02 15:04:05")
+	return ""
 }
 
 // Ensure Race implements the Equaler interface
@@ -125,9 +129,9 @@ func (r *GormRaceRepository) FindByName(ctx context.Context, name string) (Race,
 func (r *GormRaceRepository) Start(ctx context.Context, race *Race) error {
 	// check values
 	if race.IsStarted() {
-		return errors.Errorf("race already started at %v", race.StartTime())
+		return errors.Errorf("race already started at %v", race.StartTime.Format(raceTimeFmt))
 	}
-	race.startTime = time.Now()
+	race.StartTime = time.Now()
 	db := r.db.Save(race)
 	if err := db.Error; err != nil {
 		return errors.Wrap(err, "fail to save race in DB")
@@ -142,9 +146,9 @@ func (r *GormRaceRepository) End(ctx context.Context, race *Race) error {
 		return errors.New("race has not started yet")
 	}
 	if race.IsEnded() {
-		return errors.Errorf("race already ended at %v", race.EndTime())
+		return errors.Errorf("race already ended at %v", race.EndTime.Format(raceTimeFmt))
 	}
-	race.endTime = time.Now()
+	race.EndTime = time.Now()
 	db := r.db.Save(race)
 	if err := db.Error; err != nil {
 		return errors.Wrap(err, "fail to save race in DB")

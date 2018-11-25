@@ -2,12 +2,10 @@ package configuration
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -73,27 +71,9 @@ func New() (*Configuration, error) {
 		log.Warnf("cannot set logger level to '%s': %v", c.GetLogLevel(), err)
 	} else {
 		log.SetLevel(level)
+		log.Infof("setting logger level to '%s'", c.GetLogLevel())
 	}
 	return c, nil
-}
-
-func (c *Configuration) validateURL(serviceURL, serviceName string) {
-	if serviceURL == "" {
-		c.appendDefaultConfigErrorMessage(fmt.Sprintf("%s url is empty", serviceName))
-	} else {
-		_, err := url.Parse(serviceURL)
-		if err != nil {
-			c.appendDefaultConfigErrorMessage(fmt.Sprintf("invalid %s url: %s", serviceName, err.Error()))
-		}
-	}
-}
-
-func (c *Configuration) appendDefaultConfigErrorMessage(message string) {
-	if c.defaultConfigurationError == nil {
-		c.defaultConfigurationError = errors.New(message)
-	} else {
-		c.defaultConfigurationError = errors.Errorf("%s; %s", c.defaultConfigurationError.Error(), message)
-	}
 }
 
 // DefaultConfigurationError returns an error if the default values is used
@@ -117,7 +97,7 @@ func (c *Configuration) setConfigDefaults() {
 	c.v.SetTypeByDefaultValue(true)
 
 	c.v.SetDefault(varPostgresHost, "localhost")
-	c.v.SetDefault(varPostgresPort, 5432)
+	c.v.SetDefault(varPostgresPort, 5439)
 	c.v.SetDefault(varPostgresUser, "postgres")
 	c.v.SetDefault(varPostgresDatabase, "postgres")
 	c.v.SetDefault(varPostgresPassword, defaultDBPassword)
@@ -136,14 +116,14 @@ func (c *Configuration) setConfigDefaults() {
 	// Misc
 	//-----
 
-	// By default, test data should be cleaned from DB, unless explicitely said otherwise.
+	// By default, test data should be cleaned from DB, unless explicitly said otherwise.
 	c.v.SetDefault(varCleanTestDataEnabled, true)
 	// By default, DB logs are not output in the console
 	c.v.SetDefault(varDBLogsEnabled, false)
 
 	c.v.SetDefault(varLogLevel, defaultLogLevel)
 
-	// By default, test data should be cleaned from DB, unless explicitely said otherwise.
+	// By default, test data should be cleaned from DB, unless explicitly said otherwise.
 	c.v.SetDefault(varCleanTestDataEnabled, true)
 	// By default, DB logs are not output in the console
 	c.v.SetDefault(varDBLogsEnabled, false)

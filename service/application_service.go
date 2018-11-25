@@ -12,7 +12,6 @@ import (
 type ApplicationService struct {
 	currentRace model.Race
 	baseService *GormService
-	tm          TransactionManager
 }
 
 // NewApplicationService returns a new ApplicationService
@@ -36,14 +35,6 @@ func (s *ApplicationService) ListRaces(ctx context.Context) ([]model.Race, error
 	return result, nil
 }
 
-// CurrentRace returns the name of the current race
-func (s *ApplicationService) CurrentRace() (string, error) {
-	if s.currentRace == model.UndefinedRace {
-		return "", errors.New("no race in use")
-	}
-	return s.currentRace.Name, nil
-}
-
 // UseRace set the current race to the one matching the given name
 func (s *ApplicationService) UseRace(ctx context.Context, name string) (model.Race, error) {
 	var result model.Race
@@ -57,6 +48,24 @@ func (s *ApplicationService) UseRace(ctx context.Context, name string) (model.Ra
 	}
 	s.currentRace = result
 	return result, nil
+}
+
+// StartCurrentRace set the current race to the one matching the given name
+func (s *ApplicationService) StartCurrentRace(ctx context.Context) error {
+	if s.currentRace == model.UndefinedRace {
+		return errors.New("no race in use")
+	}
+	if s.currentRace.IsStarted() {
+		return errors.Errorf("current race already started at %v", s.currentRace.StartTimeStr())
+	}
+	err := Transactional(s.baseService, func(app Repositories) error {
+		// TODO: check that no other race has started but not ended yet
+		return app.Races().Start(ctx, &s.currentRace)
+	})
+	if err != nil {
+		return errors.Wrap(err, "unable to start race")
+	}
+	return nil
 }
 
 // ListTeams list the teams for the current race.

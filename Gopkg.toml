@@ -3,7 +3,6 @@
 # Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
 # for detailed Gopkg.toml documentation.
 #
-# required = ["github.com/user/thing/cmd/thing"]
 # ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
 #
 # [[constraint]]
@@ -24,6 +23,7 @@
 #   go-tests = true
 #   unused-packages = true
 
+required = ["github.com/pilu/fresh",]
 
 [[constraint]]
   name = "github.com/chzyer/readline"
@@ -44,6 +44,16 @@ version = "0.8.0"
 [[constraint]]
   name = "github.com/lib/pq"
 version = "1.0.0"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  source = "https://github.com/sirupsen/logrus.git"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/pilu/fresh"
+  revision = "9c0092493eff2825c3abf64e087b3383dec939c3"
+
 
 [prune]
   go-tests = true

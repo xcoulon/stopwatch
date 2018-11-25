@@ -74,6 +74,11 @@ func (s *RaceRepositoryTestSuite) TestStartRace() {
 		// then
 		require.NoError(t, err)
 		require.True(t, race.IsStarted())
+		// verify the start time
+		result, err := raceRepo.FindByName(ctx, race.Name)
+		require.NoError(s.T(), err)
+		assert.False(s.T(), result.StartTime.IsZero())
+		assert.True(s.T(), result.EndTime.IsZero())
 	})
 
 	s.T().Run("failure", func(t *testing.T) {
@@ -114,6 +119,11 @@ func (s *RaceRepositoryTestSuite) TestEndRace() {
 		// then
 		require.NoError(t, err)
 		require.True(t, race.IsEnded())
+		// verify the end time
+		result, err := raceRepo.FindByName(ctx, race.Name)
+		require.NoError(s.T(), err)
+		assert.False(s.T(), result.StartTime.IsZero())
+		assert.False(s.T(), result.EndTime.IsZero())
 	})
 
 	s.T().Run("failure", func(t *testing.T) {

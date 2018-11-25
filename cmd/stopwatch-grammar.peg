@@ -1,0 +1,72 @@
+{
+package cmd 
+
+import (
+    "github.com/vatriathlon/stopwatch"
+    log "github.com/sirupsen/logrus"
+)
+
+// *****************************************************************************************
+// This file is generated after its sibling `stopwatch-grammar.peg` file. DO NOT MODIFY !
+// *****************************************************************************************
+
+}
+
+// ------------------------------------------
+// (any) command
+// ------------------------------------------
+AnyCommand <- help / exit / list / use / start / end / status
+
+// ------------------------------------------
+// help command
+// ------------------------------------------
+help "display the commands" <- "help"i WS*  EOF {
+    return NewHelpCmd()
+}
+
+// ------------------------------------------
+// exit program command
+// ------------------------------------------
+exit "exit the program" <- "exit"i WS*  EOF { // exit the program
+    return NewExitCmd()
+}
+
+// ------------------------------------------
+// list races command
+// ------------------------------------------
+list "list the races" <- "list"i WS* EOF { // list the races
+    return NewListRacesCmd()
+}
+
+// ------------------------------------------
+// use race command
+// ------------------------------------------
+use "use a the race" <- "use"i WS+ raceName:(raceName) WS* EOF { // list the races
+    return NewUseRaceCmd(raceName.(string))
+}
+
+raceName <- (!EOF .)* {
+    return string(c.text), nil
+}
+
+// ------------------------------------------
+// start race command
+// ------------------------------------------
+start "start the stopwatch for the race in use" <- "start"i WS* EOF { // list the races
+    return NewStartRaceCmd()
+}
+
+// ------------------------------------------
+// stop race command
+// ------------------------------------------
+stop "stop the stopwatch for the race in use" <- "stop"i WS* EOF { // list the races
+    return NewStopRaceCmd()
+}
+
+// ------------------------------------------
+// base rules
+// ------------------------------------------
+
+WS <- " " / "\t"
+
+EOF <- !.

@@ -3,9 +3,8 @@ package service
 import (
 	"time"
 
-	"github.com/fabric8-services/fabric8-common/log"
-
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 var databaseTransactionTimeout = 1 * time.Minute
@@ -52,20 +51,34 @@ func Transactional(svc *GormService, todo func(r Repositories) error) error {
 		select {
 		case err := <-errorChan:
 			if err != nil {
-				log.Debug(nil, nil, "Rolling back the transaction...")
-				tx.Rollback()
+				log.Warn("Rolling back the transaction...")
 				log.Error(nil, map[string]interface{}{
 					"err": err,
-				}, "database transaction failed!")
+				}, "database transaction failed. Rolling back...")
+				if err2 := tx.Rollback(); err2 != nil {
+					log.Error(nil, map[string]interface{}{
+						"err": err2,
+					}, "database transaction rollback failed!")
+				}
 				return errors.WithStack(err)
 			}
-
-			tx.Commit()
-			log.Debug(nil, nil, "Commit the transaction!")
+			if err := tx.Commit(); err != nil {
+				log.Error(nil, map[string]interface{}{
+					"err": err,
+				}, "database transaction commit failed!")
+			}
+			log.Debug("Commit the transaction!")
 			return nil
 		case <-txTimeout:
-			log.Debug(nil, nil, "Rolling back the transaction...")
-			tx.Rollback()
+			log.Debug("Rolling back the transaction...")
+			log.Error(nil, map[string]interface{}{
+				"err": err,
+			}, "database transaction timeout. Rolling back...")
+			if err2 := tx.Rollback(); err2 != nil {
+				log.Error(nil, map[string]interface{}{
+					"err": err2,
+				}, "database transaction rollback failed!")
+			}
 			return errors.New("database transaction timeout")
 		}
 	}()

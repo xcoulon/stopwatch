@@ -87,5 +87,6 @@ func (s *ServiceTestSuite) TestUseRace() {
 	assert.Equal(s.T(), race1, raceInUse1)
 	// check race in use from the service method as well
 	raceInUse2, err := svc.CurrentRace()
+	require.NoError(s.T(), err)
 	assert.Equal(s.T(), race1.Name, raceInUse2)
 }

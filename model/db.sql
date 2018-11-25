@@ -4,7 +4,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE race (
     race_id uuid primary key DEFAULT uuid_generate_v4() NOT NULL,
     name varchar NOT NULL,
-    start_time timestamp
+    start_time timestamp,
+    end_time timestamp
 );
 
 -- index to query event type by name, which must be unique
@@ -34,3 +35,6 @@ CREATE TABLE lap (
 ALTER TABLE team add constraint lap_race_fk foreign key (race_id) REFERENCES race (race_id);
 -- Add a foreign key constraint to team
 ALTER TABLE team add constraint lap_team_fk foreign key (team_id) REFERENCES team (team_id);
+
+-- sample data
+insert into race(name) values ('course adultes');
