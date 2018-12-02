@@ -1,7 +1,6 @@
 package model_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -27,7 +26,6 @@ type RaceRepositoryTestSuite struct {
 
 func (s *RaceRepositoryTestSuite) TestCreateRace() {
 	// given
-	ctx := context.Background()
 	raceRepo := model.NewRaceRepository(s.DB)
 
 	s.T().Run("ok", func(t *testing.T) {
@@ -36,7 +34,7 @@ func (s *RaceRepositoryTestSuite) TestCreateRace() {
 			Name: fmt.Sprintf("race %s", uuid.NewV4()),
 		}
 		// when
-		err := raceRepo.Create(ctx, &race)
+		err := raceRepo.Create(&race)
 		// then
 		require.NoError(t, err)
 		require.NotEqual(t, race.ID, uuid.Nil)
@@ -48,7 +46,7 @@ func (s *RaceRepositoryTestSuite) TestCreateRace() {
 			// given
 			race := model.Race{}
 			// when
-			err := raceRepo.Create(ctx, &race)
+			err := raceRepo.Create(&race)
 			// then
 			require.NoError(t, err)
 			require.NotEqual(t, race.ID, uuid.Nil)
@@ -59,7 +57,6 @@ func (s *RaceRepositoryTestSuite) TestCreateRace() {
 
 func (s *RaceRepositoryTestSuite) TestStartRace() {
 	// given
-	ctx := context.Background()
 	raceRepo := model.NewRaceRepository(s.DB)
 
 	s.T().Run("ok", func(t *testing.T) {
@@ -67,15 +64,15 @@ func (s *RaceRepositoryTestSuite) TestStartRace() {
 		race := model.Race{
 			Name: fmt.Sprintf("race %s", uuid.NewV4()),
 		}
-		err := raceRepo.Create(ctx, &race)
+		err := raceRepo.Create(&race)
 		require.NoError(t, err)
 		// when
-		err = raceRepo.Start(ctx, &race)
+		err = raceRepo.Start(&race)
 		// then
 		require.NoError(t, err)
 		require.True(t, race.IsStarted())
 		// verify the start time
-		result, err := raceRepo.FindByName(ctx, race.Name)
+		result, err := raceRepo.FindByName(race.Name)
 		require.NoError(s.T(), err)
 		assert.False(s.T(), result.StartTime.IsZero())
 		assert.True(s.T(), result.EndTime.IsZero())
@@ -88,12 +85,12 @@ func (s *RaceRepositoryTestSuite) TestStartRace() {
 			race := model.Race{
 				Name: fmt.Sprintf("race %s", uuid.NewV4()),
 			}
-			err := raceRepo.Create(ctx, &race)
+			err := raceRepo.Create(&race)
 			require.NoError(t, err)
-			err = raceRepo.Start(ctx, &race)
+			err = raceRepo.Start(&race)
 			require.NoError(t, err)
 			// when
-			err = raceRepo.Start(ctx, &race)
+			err = raceRepo.Start(&race)
 			// then
 			require.Error(t, err)
 		})
@@ -102,7 +99,6 @@ func (s *RaceRepositoryTestSuite) TestStartRace() {
 
 func (s *RaceRepositoryTestSuite) TestEndRace() {
 	// given
-	ctx := context.Background()
 	raceRepo := model.NewRaceRepository(s.DB)
 
 	s.T().Run("ok", func(t *testing.T) {
@@ -110,17 +106,17 @@ func (s *RaceRepositoryTestSuite) TestEndRace() {
 		race := model.Race{
 			Name: fmt.Sprintf("race %s", uuid.NewV4()),
 		}
-		err := raceRepo.Create(ctx, &race)
+		err := raceRepo.Create(&race)
 		require.NoError(t, err)
-		err = raceRepo.Start(ctx, &race)
+		err = raceRepo.Start(&race)
 		require.NoError(t, err)
 		// when
-		err = raceRepo.End(ctx, &race)
+		err = raceRepo.End(&race)
 		// then
 		require.NoError(t, err)
 		require.True(t, race.IsEnded())
 		// verify the end time
-		result, err := raceRepo.FindByName(ctx, race.Name)
+		result, err := raceRepo.FindByName(race.Name)
 		require.NoError(s.T(), err)
 		assert.False(s.T(), result.StartTime.IsZero())
 		assert.False(s.T(), result.EndTime.IsZero())
@@ -133,12 +129,12 @@ func (s *RaceRepositoryTestSuite) TestEndRace() {
 			race := model.Race{
 				Name: fmt.Sprintf("race %s", uuid.NewV4()),
 			}
-			err := raceRepo.Create(ctx, &race)
+			err := raceRepo.Create(&race)
 			require.NoError(t, err)
-			err = raceRepo.Start(ctx, &race)
+			err = raceRepo.Start(&race)
 			require.NoError(t, err)
 			// when
-			err = raceRepo.Start(ctx, &race)
+			err = raceRepo.Start(&race)
 			// then
 			require.Error(t, err)
 		})
@@ -148,14 +144,14 @@ func (s *RaceRepositoryTestSuite) TestEndRace() {
 			race := model.Race{
 				Name: fmt.Sprintf("race %s", uuid.NewV4()),
 			}
-			err := raceRepo.Create(ctx, &race)
+			err := raceRepo.Create(&race)
 			require.NoError(t, err)
-			err = raceRepo.Start(ctx, &race)
+			err = raceRepo.Start(&race)
 			require.NoError(t, err)
-			err = raceRepo.End(ctx, &race)
+			err = raceRepo.End(&race)
 			require.NoError(t, err)
 			// when
-			err = raceRepo.End(ctx, &race)
+			err = raceRepo.End(&race)
 			// then
 			require.Error(t, err)
 		})
@@ -164,7 +160,6 @@ func (s *RaceRepositoryTestSuite) TestEndRace() {
 
 func (s *RaceRepositoryTestSuite) TestFindByName() {
 	// given
-	ctx := context.Background()
 	raceRepo := model.NewRaceRepository(s.DB)
 
 	s.T().Run("ok", func(t *testing.T) {
@@ -172,17 +167,17 @@ func (s *RaceRepositoryTestSuite) TestFindByName() {
 		race := model.Race{
 			Name: fmt.Sprintf("race %s", uuid.NewV4()),
 		}
-		err := raceRepo.Create(ctx, &race)
+		err := raceRepo.Create(&race)
 		require.NoError(t, err)
 		// when
-		_, err = raceRepo.FindByName(ctx, race.Name)
+		_, err = raceRepo.FindByName(race.Name)
 		// then
 		require.NoError(t, err)
 	})
 
 	s.T().Run("no match", func(t *testing.T) {
 		// when
-		_, err := raceRepo.FindByName(ctx, "foo")
+		_, err := raceRepo.FindByName("foo")
 		// then
 		require.Error(t, err)
 	})
@@ -190,10 +185,9 @@ func (s *RaceRepositoryTestSuite) TestFindByName() {
 
 func (s *RaceRepositoryTestSuite) TestListRacesNoResult() {
 	// given
-	ctx := context.Background()
 	raceRepo := model.NewRaceRepository(s.DB)
 	// when
-	races, err := raceRepo.List(ctx)
+	races, err := raceRepo.List()
 	// then
 	require.NoError(s.T(), err)
 	assert.Empty(s.T(), races)
@@ -201,15 +195,14 @@ func (s *RaceRepositoryTestSuite) TestListRacesNoResult() {
 
 func (s *RaceRepositoryTestSuite) TestListRacesSingleResult() {
 	// given
-	ctx := context.Background()
 	raceRepo := model.NewRaceRepository(s.DB)
 	race1 := model.Race{
 		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
-	err := raceRepo.Create(ctx, &race1)
+	err := raceRepo.Create(&race1)
 	require.NoError(s.T(), err)
 	// when
-	races, err := raceRepo.List(ctx)
+	races, err := raceRepo.List()
 	// then
 	require.NoError(s.T(), err)
 	assert.Len(s.T(), races, 1)
@@ -217,7 +210,6 @@ func (s *RaceRepositoryTestSuite) TestListRacesSingleResult() {
 
 func (s *RaceRepositoryTestSuite) TestListRacesMultipleResults() {
 	// given
-	ctx := context.Background()
 	raceRepo := model.NewRaceRepository(s.DB)
 	race1 := model.Race{
 		Name: fmt.Sprintf("race foo %s", uuid.NewV4()),
@@ -225,16 +217,16 @@ func (s *RaceRepositoryTestSuite) TestListRacesMultipleResults() {
 	race2 := model.Race{
 		Name: fmt.Sprintf("race bar %s", uuid.NewV4()),
 	}
-	err := raceRepo.Create(ctx, &race1)
+	err := raceRepo.Create(&race1)
 	require.NoError(s.T(), err)
-	err = raceRepo.Create(ctx, &race2)
+	err = raceRepo.Create(&race2)
 	require.NoError(s.T(), err)
 	// when
-	races, err := raceRepo.List(ctx)
+	races, err := raceRepo.List()
 	// then
 	require.NoError(s.T(), err)
 	require.Len(s.T(), races, 2)
 	// verify result ordering
-	assert.Equal(s.T(), race2, races[0])
-	assert.Equal(s.T(), race1, races[1])
+	assert.Equal(s.T(), race2.Name, races[0].Name)
+	assert.Equal(s.T(), race1.Name, races[1].Name)
 }

@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -76,11 +75,11 @@ func (r Race) Equal(o Equaler) bool {
 
 // RaceRepository provides functions to create and view races
 type RaceRepository interface {
-	Create(ctx context.Context, race *Race) error
-	FindByName(ctx context.Context, name string) (Race, error)
-	Start(ctx context.Context, race *Race) error
-	End(ctx context.Context, race *Race) error
-	List(ctx context.Context) ([]Race, error)
+	Create(race *Race) error
+	FindByName(name string) (Race, error)
+	Start(race *Race) error
+	End(race *Race) error
+	List() ([]Race, error)
 }
 
 // NewRaceRepository creates a new GormRaceRepository
@@ -97,7 +96,7 @@ type GormRaceRepository struct {
 }
 
 // Create creates a race
-func (r *GormRaceRepository) Create(ctx context.Context, race *Race) error {
+func (r *GormRaceRepository) Create(race *Race) error {
 	// check values
 	if race == nil {
 		return errors.New("missing race to create")
@@ -116,7 +115,7 @@ func (r *GormRaceRepository) Create(ctx context.Context, race *Race) error {
 }
 
 // FindByName find the race with the given name. Returns an error if none was found
-func (r *GormRaceRepository) FindByName(ctx context.Context, name string) (Race, error) {
+func (r *GormRaceRepository) FindByName(name string) (Race, error) {
 	var result Race
 	db := r.db.First(&result, "name = ?", name)
 	if err := db.Error; err != nil {
@@ -126,7 +125,7 @@ func (r *GormRaceRepository) FindByName(ctx context.Context, name string) (Race,
 }
 
 // Start marks the given race as started (now)
-func (r *GormRaceRepository) Start(ctx context.Context, race *Race) error {
+func (r *GormRaceRepository) Start(race *Race) error {
 	// check values
 	if race.IsStarted() {
 		return errors.Errorf("race already started at %v", race.StartTime.Format(raceTimeFmt))
@@ -140,7 +139,7 @@ func (r *GormRaceRepository) Start(ctx context.Context, race *Race) error {
 }
 
 // End marks the given race as ended (now)
-func (r *GormRaceRepository) End(ctx context.Context, race *Race) error {
+func (r *GormRaceRepository) End(race *Race) error {
 	// check values
 	if !race.IsStarted() {
 		return errors.New("race has not started yet")
@@ -157,7 +156,7 @@ func (r *GormRaceRepository) End(ctx context.Context, race *Race) error {
 }
 
 // List lists all races
-func (r *GormRaceRepository) List(ctx context.Context) ([]Race, error) {
+func (r *GormRaceRepository) List() ([]Race, error) {
 	result := make([]Race, 0)
 	db := r.db.Order("name ASC").Find(&result)
 	if err := db.Error; err != nil {

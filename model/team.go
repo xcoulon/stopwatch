@@ -1,7 +1,7 @@
 package model
 
 import (
-	"context"
+	"fmt"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -14,7 +14,7 @@ type Team struct {
 	BibNumber string    `gorm:"column:bib_number"`
 	Name      string
 	RaceID    uuid.UUID `sql:"type:uuid" gorm:"column:race_id"`
-	Laps      []Lap
+	Laps      []Lap     `gorm:"foreignkey:TeamID"`
 }
 
 const (
@@ -41,8 +41,10 @@ func (t Team) Equal(o Equaler) bool {
 
 // TeamRepository provides functions to create and view teams
 type TeamRepository interface {
-	Create(ctx context.Context, team *Team) error
-	List(ctx context.Context, raceID uuid.UUID) ([]Team, error)
+	Create(team *Team) error
+	List(raceID uuid.UUID) ([]Team, error)
+	FindIDByBibNumber(raceID uuid.UUID, bibnumber string) (uuid.UUID, error)
+	LoadByBibNumber(raceID uuid.UUID, bibnumber string) (Team, error)
 }
 
 // NewTeamRepository creates a new GormTeamRepository
@@ -59,7 +61,7 @@ type GormTeamRepository struct {
 }
 
 // Create stores the given team
-func (r *GormTeamRepository) Create(ctx context.Context, team *Team) error {
+func (r *GormTeamRepository) Create(team *Team) error {
 	// check values
 	if team == nil {
 		return errors.New("missing team to persist")
@@ -81,11 +83,34 @@ func (r *GormTeamRepository) Create(ctx context.Context, team *Team) error {
 }
 
 // List lists all teams for a given race
-func (r *GormTeamRepository) List(ctx context.Context, raceID uuid.UUID) ([]Team, error) {
+func (r *GormTeamRepository) List(raceID uuid.UUID) ([]Team, error) {
 	result := make([]Team, 0)
 	db := r.db.Where("race_id = ?", raceID).Order("bib_number ASC").Find(&result)
 	if err := db.Error; err != nil {
 		return result, errors.Wrap(err, "fail to list teams")
 	}
 	return result, nil
+}
+
+// FindIDByBibNumber finds the team's ID from the given bibnumber in the given race
+func (r *GormTeamRepository) FindIDByBibNumber(raceID uuid.UUID, bibnumber string) (uuid.UUID, error) {
+	var team Team
+	err := r.db.Raw(
+		fmt.Sprintf("select team_id from %s where race_id = ? and bib_number = ?", team.TableName()),
+		raceID, bibnumber).Scan(&team).Error
+	if err != nil {
+		return uuid.Nil, errors.Wrap(err, "fail to find team by bibnumber")
+	}
+	return team.ID, nil
+}
+
+// LoadByBibNumber loads the team along with its laps from the given bibnumber in the given race
+func (r *GormTeamRepository) LoadByBibNumber(raceID uuid.UUID, bibnumber string) (Team, error) {
+	result := Team{}
+	db := r.db.Preload("Laps").Where("race_id = ? and bib_number = ?", raceID, bibnumber).First(&result)
+	if err := db.Error; err != nil {
+		return result, errors.Wrap(err, "fail to find team by bibnumber")
+	}
+	return result, nil
+
 }

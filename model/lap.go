@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -41,7 +40,7 @@ func (l Lap) Equal(o Equaler) bool {
 
 // LapRepository provides functions to create and view team laps
 type LapRepository interface {
-	Create(ctx context.Context, lap *Lap) error
+	Create(lap *Lap) error
 }
 
 // NewLapRepository creates a new GormLapRepository
@@ -58,7 +57,7 @@ type GormLapRepository struct {
 }
 
 // Create stores the given lap
-func (r *GormLapRepository) Create(ctx context.Context, lap *Lap) error {
+func (r *GormLapRepository) Create(lap *Lap) error {
 	// check values
 	if lap == nil {
 		return errors.New("missing lap to create")
