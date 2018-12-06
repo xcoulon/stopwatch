@@ -10,13 +10,12 @@ import (
 
 // ApplicationService the interface for the application service
 type ApplicationService struct {
-	currentRace model.Race
 	baseService *GormService
 }
 
 // NewApplicationService returns a new ApplicationService
-func NewApplicationService(db *gorm.DB) *ApplicationService {
-	return &ApplicationService{
+func NewApplicationService(db *gorm.DB) ApplicationService {
+	return ApplicationService{
 		baseService: NewGormService(db),
 	}
 }
@@ -35,56 +34,32 @@ func (s *ApplicationService) ListRaces() ([]model.Race, error) {
 	return result, nil
 }
 
-// UseRace set the current race to the one matching the given name
-func (s *ApplicationService) UseRace(name string) (model.Race, error) {
-	var result model.Race
+// StartRace set the current race to the one matching the given name
+func (s *ApplicationService) StartRace(raceID int) (time.Time, error) {
+	var race model.Race
 	err := Transactional(s.baseService, func(app Repositories) error {
 		var err error
-		result, err = app.Races().FindByName(name)
-		return err
-	})
-	if err != nil { // also covers the case where no race matched the given name
-		return result, errors.Wrapf(err, "unable to find race named '%s'", name)
-	}
-	s.currentRace = result
-	return result, nil
-}
-
-// RaceInUse returns the race in user, or an error if none is in use yet
-func (s *ApplicationService) RaceInUse() (model.Race, error) {
-	if s.currentRace == model.UndefinedRace {
-		return model.UndefinedRace, errors.New("no race is in use")
-	}
-	return s.currentRace, nil
-}
-
-// StartCurrentRace set the current race to the one matching the given name
-func (s *ApplicationService) StartCurrentRace() (time.Time, error) {
-	if s.currentRace == model.UndefinedRace {
-		return time.Now(), errors.New("no race in use")
-	}
-	if s.currentRace.IsStarted() {
-		return time.Now(), errors.Errorf("current race already started at %v", s.currentRace.StartTimeStr())
-	}
-	err := Transactional(s.baseService, func(app Repositories) error {
-		// TODO: check that no other race has started but not ended yet
-		return app.Races().Start(&s.currentRace)
+		race, err = app.Races().Lookup(raceID)
+		if err != nil {
+			return err
+		}
+		if race.IsStarted() {
+			return errors.Errorf("current race already started at %v", race.StartTimeStr())
+		}
+		return app.Races().Start(&race)
 	})
 	if err != nil {
 		return time.Now(), errors.Wrap(err, "unable to start race")
 	}
-	return s.currentRace.StartTime, nil
+	return race.StartTime, nil
 }
 
 // ListTeams list the teams for the current race.
-func (s *ApplicationService) ListTeams() ([]model.Team, error) {
-	if s.currentRace == model.UndefinedRace {
-		return []model.Team{}, errors.New("no race in use")
-	}
+func (s *ApplicationService) ListTeams(raceID int) ([]model.Team, error) {
 	var result []model.Team
 	err := Transactional(s.baseService, func(app Repositories) error {
 		var err error
-		result, err = app.Teams().List(s.currentRace.ID)
+		result, err = app.Teams().List(raceID)
 		return err
 	})
 	if err != nil {
@@ -94,25 +69,22 @@ func (s *ApplicationService) ListTeams() ([]model.Team, error) {
 }
 
 // AddLap record a new lap at the current time for the teams with given bib numbers
-func (s *ApplicationService) AddLap(bibnumber string) (model.Team, error) {
-	if s.currentRace == model.UndefinedRace {
-		return model.Team{}, errors.New("no race in use")
-	}
+func (s *ApplicationService) AddLap(raceID int, bibnumber string) (model.Team, error) {
 	var team model.Team
 	err := Transactional(s.baseService, func(app Repositories) error {
-		teamID, err := app.Teams().FindIDByBibNumber(s.currentRace.ID, bibnumber)
+		teamID, err := app.Teams().FindIDByBibNumber(raceID, bibnumber)
 		if err != nil {
 			return err
 		}
 		err = app.Laps().Create(&model.Lap{
-			RaceID: s.currentRace.ID,
+			RaceID: raceID,
 			TeamID: teamID,
 			Time:   time.Now(),
 		})
 		if err != nil {
 			return err
 		}
-		team, err = app.Teams().LoadByBibNumber(s.currentRace.ID, bibnumber)
+		team, err = app.Teams().LoadByBibNumber(raceID, bibnumber)
 		return err
 	})
 	if err != nil {

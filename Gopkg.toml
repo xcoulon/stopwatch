@@ -26,10 +26,6 @@
 required = ["github.com/pilu/fresh",]
 
 [[constraint]]
-  name = "github.com/chzyer/readline"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/satori/go.uuid"
 version = "1.2.0"
 

@@ -6,9 +6,16 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
+)
+
+var (
+	// BuildCommit lastest build commit (set by build script)
+	BuildCommit = "unknown"
+	// BuildTime set by build script
+	BuildTime = "unknown"
 )
 
 // String returns the current configuration as a string
@@ -16,7 +23,7 @@ func (c *Configuration) String() string {
 	allSettings := c.v.AllSettings()
 	y, err := yaml.Marshal(&allSettings)
 	if err != nil {
-		log.WithFields(map[string]interface{}{
+		logrus.WithFields(map[string]interface{}{
 			"settings": allSettings,
 			"err":      err,
 		}).Panicln("Failed to marshall config to string")
@@ -31,13 +38,15 @@ const (
 	// General
 	varCleanTestDataEnabled = "clean.test.data"
 	varDBLogsEnabled        = "enable.db.logs"
-	varLogLevel             = "log.level"
+	varLogLevel             = "logrus.level"
 	// Postgres
 	varPostgresHost                 = "postgres.host"
 	varPostgresPort                 = "postgres.port"
-	varPostgresUser                 = "postgres.user"
 	varPostgresDatabase             = "postgres.database"
+	varPostgresUser                 = "postgres.user"
 	varPostgresPassword             = "postgres.password"
+	varPostgresSuperUser            = "postgres.superuser"
+	varPostgresAdminPassword        = "postgres.admin.password"
 	varPostgresSSLMode              = "postgres.sslmode"
 	varPostgresConnectionTimeout    = "postgres.connection.timeout"
 	varPostgresTransactionTimeout   = "postgres.transaction.timeout"
@@ -66,12 +75,12 @@ func New() (*Configuration, error) {
 	c.v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	c.v.SetTypeByDefaultValue(true)
 	c.setConfigDefaults()
-	level, err := log.ParseLevel(c.GetLogLevel())
+	level, err := logrus.ParseLevel(c.GetLogLevel())
 	if err != nil {
-		log.Warnf("cannot set logger level to '%s': %v", c.GetLogLevel(), err)
+		logrus.Warnf("cannot set logger level to '%s': %v", c.GetLogLevel(), err)
 	} else {
-		log.SetLevel(level)
-		log.Infof("setting logger level to '%s'", c.GetLogLevel())
+		logrus.SetLevel(level)
+		logrus.Infof("setting logger level to '%s'", c.GetLogLevel())
 	}
 	return c, nil
 }
@@ -98,9 +107,10 @@ func (c *Configuration) setConfigDefaults() {
 
 	c.v.SetDefault(varPostgresHost, "localhost")
 	c.v.SetDefault(varPostgresPort, 5439)
-	c.v.SetDefault(varPostgresUser, "postgres")
 	c.v.SetDefault(varPostgresDatabase, "postgres")
+	c.v.SetDefault(varPostgresUser, "postgres")
 	c.v.SetDefault(varPostgresPassword, defaultDBPassword)
+	c.v.SetDefault(varPostgresSuperUser, "postgres")
 	c.v.SetDefault(varPostgresSSLMode, "disable")
 	c.v.SetDefault(varPostgresConnectionTimeout, 5)
 	c.v.SetDefault(varPostgresConnectionMaxIdle, -1)
@@ -143,6 +153,16 @@ func (c *Configuration) GetPostgresPort() int64 {
 // GetPostgresUser returns the postgres user as set via default, config file, or environment variable
 func (c *Configuration) GetPostgresUser() string {
 	return c.v.GetString(varPostgresUser)
+}
+
+// GetPostgresSuperUser returns the postgres superuser as set via default, config file, or environment variable
+func (c *Configuration) GetPostgresSuperUser() string {
+	return c.v.GetString(varPostgresSuperUser)
+}
+
+// GetPostgresAdminPassword returns the postgres password as set via default, config file, or environment variable
+func (c *Configuration) GetPostgresAdminPassword() string {
+	return c.v.GetString(varPostgresAdminPassword)
 }
 
 // GetPostgresDatabase returns the postgres database as set via default, config file, or environment variable
@@ -199,6 +219,18 @@ func (c *Configuration) GetPostgresConfigString() string {
 		c.GetPostgresSSLMode(),
 		c.GetPostgresConnectionTimeout(),
 	)
+}
+
+//GetPostgresAdminConfigString returns the settings for opening a new connection on a PostgreSQL server
+func (c *Configuration) GetPostgresAdminConfigString() string {
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s connect_timeout=%d",
+		c.GetPostgresHost(),
+		c.GetPostgresPort(),
+		c.GetPostgresSuperUser(),
+		c.GetPostgresAdminPassword(),
+		c.GetPostgresDatabase(),
+		c.GetPostgresSSLMode(),
+		c.GetPostgresConnectionTimeout())
 }
 
 // IsCleanTestDataEnabled returns `true` if the test data should be cleaned after each test. (default: true)

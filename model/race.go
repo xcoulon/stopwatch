@@ -5,13 +5,12 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // Race a race
 type Race struct {
-	ID        uuid.UUID `sql:"type:uuid default uuid_generate_v4()" gorm:"primary_key;column:race_id"`
+	ID        int `gorm:"primary_key;column:race_id"`
 	Name      string
 	StartTime time.Time
 	EndTime   time.Time
@@ -35,7 +34,7 @@ func (r *Race) TableName() string {
 
 // IsStarted returns 'true' if the race has already started, false otherwise.
 func (r *Race) IsStarted() bool {
-	log.Debugf("race started at: %v (is zero=%t)", r.StartTime.Format(raceTimeFmt), r.StartTime.IsZero())
+	logrus.Debugf("race started at: %v (is zero=%t)", r.StartTime.Format(raceTimeFmt), r.StartTime.IsZero())
 	return !r.StartTime.IsZero()
 }
 
@@ -76,6 +75,7 @@ func (r Race) Equal(o Equaler) bool {
 // RaceRepository provides functions to create and view races
 type RaceRepository interface {
 	Create(race *Race) error
+	Lookup(id int) (Race, error)
 	FindByName(name string) (Race, error)
 	Start(race *Race) error
 	End(race *Race) error
@@ -101,6 +101,9 @@ func (r *GormRaceRepository) Create(race *Race) error {
 	if race == nil {
 		return errors.New("missing race to create")
 	}
+	if race.Name == "" {
+		return errors.New("race name is missing")
+	}
 	if race.IsStarted() {
 		return errors.New("race to create cannot be started yet")
 	}
@@ -112,6 +115,16 @@ func (r *GormRaceRepository) Create(race *Race) error {
 		return errors.Wrap(err, "fail to store race in DB")
 	}
 	return nil
+}
+
+// Lookup find the race with its ID name. Returns an error if none was found
+func (r *GormRaceRepository) Lookup(id int) (Race, error) {
+	var result Race
+	db := r.db.First(&result, "race_id = ?", id)
+	if err := db.Error; err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 // FindByName find the race with the given name. Returns an error if none was found

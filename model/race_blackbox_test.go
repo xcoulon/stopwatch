@@ -37,7 +37,7 @@ func (s *RaceRepositoryTestSuite) TestCreateRace() {
 		err := raceRepo.Create(&race)
 		// then
 		require.NoError(t, err)
-		require.NotEqual(t, race.ID, uuid.Nil)
+		require.NotEqual(t, race.ID, 0)
 	})
 
 	s.T().Run("failure", func(t *testing.T) {
@@ -48,8 +48,8 @@ func (s *RaceRepositoryTestSuite) TestCreateRace() {
 			// when
 			err := raceRepo.Create(&race)
 			// then
-			require.NoError(t, err)
-			require.NotEqual(t, race.ID, uuid.Nil)
+			require.Error(t, err)
+			require.Equal(t, race.ID, 0)
 		})
 	})
 
@@ -178,6 +178,31 @@ func (s *RaceRepositoryTestSuite) TestFindByName() {
 	s.T().Run("no match", func(t *testing.T) {
 		// when
 		_, err := raceRepo.FindByName("foo")
+		// then
+		require.Error(t, err)
+	})
+}
+
+func (s *RaceRepositoryTestSuite) TestLookup() {
+	// given
+	raceRepo := model.NewRaceRepository(s.DB)
+
+	s.T().Run("ok", func(t *testing.T) {
+		// given
+		race := model.Race{
+			Name: fmt.Sprintf("race %s", uuid.NewV4()),
+		}
+		err := raceRepo.Create(&race)
+		require.NoError(t, err)
+		// when
+		_, err = raceRepo.Lookup(race.ID)
+		// then
+		require.NoError(t, err)
+	})
+
+	s.T().Run("no match", func(t *testing.T) {
+		// when
+		_, err := raceRepo.Lookup(0)
 		// then
 		require.Error(t, err)
 	})

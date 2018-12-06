@@ -62,50 +62,7 @@ func (s *ServiceTestSuite) TestListRacesMultipleResults() {
 	assert.Len(s.T(), races, 2)
 }
 
-func (s *ServiceTestSuite) TestUseRace() {
-	// given
-	raceRepo := model.NewRaceRepository(s.DB)
-	race1 := model.Race{
-		Name: fmt.Sprintf("race %s", uuid.NewV4()),
-	}
-	err := raceRepo.Create(&race1)
-	require.NoError(s.T(), err)
-	race2 := model.Race{
-		Name: fmt.Sprintf("race %s", uuid.NewV4()),
-	}
-	err = raceRepo.Create(&race2)
-	require.NoError(s.T(), err)
-	svc := service.NewApplicationService(s.DB)
-	// when
-	raceInUse1, err := svc.UseRace(race1.Name)
-	// then
-	require.NoError(s.T(), err)
-	assert.Equal(s.T(), race1.Name, raceInUse1.Name)
-	// check race in use from the service method as well
-	raceInUse2, err := svc.RaceInUse()
-	require.NoError(s.T(), err)
-	assert.Equal(s.T(), race1.Name, raceInUse2.Name)
-}
-
 func (s *ServiceTestSuite) TestListTeams() {
-
-	s.T().Run("failure", func(t *testing.T) {
-
-		t.Run("no race in use", func(t *testing.T) {
-			// given
-			raceRepo := model.NewRaceRepository(s.DB)
-			race := model.Race{
-				Name: fmt.Sprintf("race %s", uuid.NewV4()),
-			}
-			err := raceRepo.Create(&race)
-			require.NoError(t, err)
-			svc := service.NewApplicationService(s.DB)
-			// when
-			_, err = svc.ListTeams()
-			// then
-			require.Error(t, err)
-		})
-	})
 
 	s.T().Run("ok", func(t *testing.T) {
 		// given
@@ -116,8 +73,6 @@ func (s *ServiceTestSuite) TestListTeams() {
 		err := raceRepo.Create(&race)
 		require.NoError(t, err)
 		svc := service.NewApplicationService(s.DB)
-		_, err = svc.UseRace(race.Name)
-		require.NoError(t, err)
 		teamRepo := model.NewTeamRepository(s.DB)
 		for i := 0; i < 5; i++ {
 			team := model.Team{
@@ -129,7 +84,7 @@ func (s *ServiceTestSuite) TestListTeams() {
 		}
 		require.NoError(t, err)
 		// when
-		teams, err := svc.ListTeams()
+		teams, err := svc.ListTeams(race.ID)
 		// then
 		require.NoError(t, err)
 		assert.Len(t, teams, 5)
@@ -146,8 +101,6 @@ func (s *ServiceTestSuite) TestAddLap() {
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
 	svc := service.NewApplicationService(s.DB)
-	_, err = svc.UseRace(race.Name)
-	require.NoError(s.T(), err)
 	teamRepo := model.NewTeamRepository(s.DB)
 	teams := []model.Team{}
 	for i := 0; i < 5; i++ {
@@ -165,7 +118,7 @@ func (s *ServiceTestSuite) TestAddLap() {
 
 		t.Run("team 0 lap 1", func(t *testing.T) {
 			// when
-			team, err := svc.AddLap("0")
+			team, err := svc.AddLap(race.ID, "0")
 			// then
 			require.NoError(t, err)
 			require.Equal(t, teams[0].Name, team.Name)
@@ -174,7 +127,7 @@ func (s *ServiceTestSuite) TestAddLap() {
 
 		t.Run("team 0 lap 2", func(t *testing.T) {
 			// when
-			team, err := svc.AddLap("0")
+			team, err := svc.AddLap(race.ID, "0")
 			// then
 			require.NoError(t, err)
 			require.Equal(t, teams[0].Name, team.Name)

@@ -38,16 +38,14 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 	require.NoError(s.T(), err)
 
 	team1 := model.Team{
-		Name:      "bar1",
-		BibNumber: "1",
-		RaceID:    race.ID,
+		Name:   "bar1",
+		RaceID: race.ID,
 	}
 	err = teamRepo.Create(&team1)
 	require.NoError(s.T(), err)
 	team2 := model.Team{
-		Name:      "bar2",
-		BibNumber: "2",
-		RaceID:    race.ID,
+		Name:   "bar2",
+		RaceID: race.ID,
 	}
 	err = teamRepo.Create(&team2)
 	require.NoError(s.T(), err)

@@ -5,15 +5,14 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 )
 
 // Lap a lap for a given team in a given race
 type Lap struct {
-	ID     uuid.UUID `sql:"type:uuid default uuid_generate_v4()" gorm:"primary_key;column:lap_id"`
+	ID     int `gorm:"primary_key;column:lap_id"`
 	Time   time.Time
-	RaceID uuid.UUID `sql:"type:uuid" gorm:"column:race_id"`
-	TeamID uuid.UUID `sql:"type:uuid" gorm:"column:team_id"`
+	RaceID int `gorm:"column:race_id"`
+	TeamID int `gorm:"column:team_id"`
 }
 
 const (
@@ -62,10 +61,10 @@ func (r *GormLapRepository) Create(lap *Lap) error {
 	if lap == nil {
 		return errors.New("missing lap to create")
 	}
-	if lap.RaceID == uuid.Nil {
+	if lap.RaceID == 0 {
 		return errors.New("missing 'RaceID' field")
 	}
-	if lap.TeamID == uuid.Nil {
+	if lap.TeamID == 0 {
 		return errors.New("missing 'TeamID' field")
 	}
 	db := r.db.Create(lap)
