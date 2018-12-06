@@ -7,7 +7,7 @@ import (
 )
 
 // *****************************************************************************************
-// This file is generated after its sibling `stopwatch-grammar.peg` file. DO NOT MODIFY !
+// This file is generated after its sibling `root-grammar.peg` file. DO NOT MODIFY !
 // *****************************************************************************************
 
 }
@@ -15,7 +15,7 @@ import (
 // ------------------------------------------
 // (any) command
 // ------------------------------------------
-AnyCommand <- help / exit / list / use / start / end / status
+RootCommand <- help / exit / races / race / teams / lap
 
 // ------------------------------------------
 // help command
@@ -34,14 +34,14 @@ exit "exit the program" <- "exit"i WS*  EOF { // exit the program
 // ------------------------------------------
 // list races command
 // ------------------------------------------
-list "list the races" <- "list"i WS* EOF { // list the races
+races "list the races" <- "races"i WS* EOF {
     return NewListRacesCmd()
 }
 
 // ------------------------------------------
-// use race command
+// race use-a-race command
 // ------------------------------------------
-use "use a the race" <- "use"i WS+ raceName:(raceName) WS* EOF { // list the races
+race "race a the race" <- "race"i WS+ raceName:(raceName) WS* EOF {
     return NewUseRaceCmd(raceName.(string))
 }
 
@@ -52,16 +52,33 @@ raceName <- (!EOF .)* {
 // ------------------------------------------
 // start race command
 // ------------------------------------------
-start "start the stopwatch for the race in use" <- "start"i WS* EOF { // list the races
+start "start the stopwatch for the race in race" <- "start"i WS* EOF {
     return NewStartRaceCmd()
 }
 
 // ------------------------------------------
 // stop race command
 // ------------------------------------------
-stop "stop the stopwatch for the race in use" <- "stop"i WS* EOF { // list the races
+stop "stop the stopwatch for the race in race" <- "stop"i WS* EOF {
     return NewStopRaceCmd()
 }
+
+// ------------------------------------------
+// list teams command
+// ------------------------------------------
+teams "list the teams" <- "teams"i WS* EOF { 
+    return NewListTeamsCmd()
+}
+
+// ------------------------------------------
+// add lap to team(s)
+// ------------------------------------------
+lap "add lap" <- bib:([0-9]+ { 
+        return string(c.text), nil
+    }) WS* EOF { 
+    return NewAddLapCmd(bib.(string))
+}
+
 
 // ------------------------------------------
 // base rules

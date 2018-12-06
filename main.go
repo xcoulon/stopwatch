@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -55,15 +54,13 @@ func main() {
 	}
 
 	defer func() {
-		fmt.Println("exiting")
+		log.Info("bye!")
 		os.Exit(0)
 	}()
 	defer func() {
-		fmt.Println("closing readline")
 		l.Close()
 	}()
 	defer func() {
-		fmt.Println("TODO: closing db connection")
 		l.Close()
 	}()
 
@@ -76,10 +73,14 @@ func main() {
 			log.Infof("Retrying to connect in %v...", config.GetPostgresConnectionRetrySleep())
 			time.Sleep(config.GetPostgresConnectionRetrySleep())
 		} else {
-			defer db.Close()
+			defer func() {
+				db.Close()
+				log.Info("closed db connection")
+			}()
 			break
 		}
 	}
+
 	db.LogMode(config.IsDBLogsEnabled())
 
 	svc := service.NewApplicationService(db)

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"runtime"
@@ -72,10 +71,11 @@ func Execute(line string, svc *service.ApplicationService, l *readline.Instance)
 	}
 	c, err := Parse("cmd", []byte(line))
 	if err != nil {
-		log.Errorf("unable to parse command: %v", err)
+		log.Errorf("unable to parse command")
 		Usage(l.Stderr())
+		return
 	}
-	// log.Debugf("you said: %T", c)
+	log.Debugf("you said: %T", c)
 	if c, ok := c.(Command); ok {
 		err := c.Execute(svc, l)
 		if err != nil {
@@ -110,6 +110,7 @@ func NewHelpCmd() (HelpCmd, error) {
 	}, nil
 }
 
+// Execute execute the `help` command
 func (c HelpCmd) Execute(svc *service.ApplicationService, l *readline.Instance) error {
 	Usage(l.Stderr())
 	return nil
@@ -128,19 +129,51 @@ type ListRacesCmd struct {
 func NewListRacesCmd() (ListRacesCmd, error) {
 	return ListRacesCmd{
 		BaseCmd: BaseCmd{
-			Name: "list",
+			Name: "races",
 		},
 	}, nil
 }
 
+// Execute execute the `list races` command
 func (c ListRacesCmd) Execute(svc *service.ApplicationService, l *readline.Instance) error {
-	races, err := svc.ListRaces(context.Background())
+	races, err := svc.ListRaces()
 	if err != nil {
 		return errors.Wrapf(err, "unable to list races")
 	}
-	fmt.Fprintf(l.Stdout(), "Races:\n")
+	log.Infof("Races:\n")
 	for _, r := range races {
-		fmt.Fprintf(l.Stdout(), "  - %s (started: %t)\n", r.Name, r.IsStarted())
+		log.Infof("  - %s (started: %t)\n", r.Name, r.IsStarted())
+	}
+	return nil
+}
+
+// ------------------------------------------------
+// List teams
+// ------------------------------------------------
+
+// ListTeamsCmd the command to list races
+type ListTeamsCmd struct {
+	BaseCmd
+}
+
+// NewListTeamsCmd returns a new ListRaceCmd
+func NewListTeamsCmd() (ListTeamsCmd, error) {
+	return ListTeamsCmd{
+		BaseCmd: BaseCmd{
+			Name: "teams",
+		},
+	}, nil
+}
+
+// Execute execute the `list races` command
+func (c ListTeamsCmd) Execute(svc *service.ApplicationService, l *readline.Instance) error {
+	teams, err := svc.ListTeams()
+	if err != nil {
+		return errors.Wrapf(err, "unable to list teams")
+	}
+	log.Infof("Teams:\n")
+	for _, t := range teams {
+		log.Infof("%s - %s\n", t.BibNumber, t.Name)
 	}
 	return nil
 }
@@ -163,8 +196,9 @@ func NewExitCmd() (ExitCmd, error) {
 	}, nil
 }
 
+// Execute execute the `exit` command
 func (c ExitCmd) Execute(svc *service.ApplicationService, l *readline.Instance) error {
-	log.Error("need a prompt to confirm! (need to 'stop' first?)") //TODO
+	// log.Error("need a prompt to confirm! (need to 'stop' first?)") //TODO
 	runtime.Goexit()
 	return nil
 }
@@ -183,17 +217,20 @@ type UseRaceCmd struct {
 func NewUseRaceCmd(raceName string) (UseRaceCmd, error) {
 	return UseRaceCmd{
 		BaseCmd: BaseCmd{
-			Name: "use",
+			Name: "race",
 		},
 		RaceName: strings.TrimSpace(raceName),
 	}, nil
 }
 
+// Execute execute the `use race` command
 func (c UseRaceCmd) Execute(svc *service.ApplicationService, l *readline.Instance) error {
-	r, err := svc.UseRace(context.Background(), c.RaceName)
+	r, err := svc.UseRace(c.RaceName)
 	if err != nil {
-		fmt.Fprintf(l.Stderr(), "failed to use race '%s': %v", c.RaceName, err)
+		log.Errorf("failed to use race '%s': %v", c.RaceName, err)
+		return err
 	}
+	log.Infof("using race '%s' (started at: %s / ended at: %s)", r.Name, r.StartTimeStr(), r.EndTimeStr())
 	l.SetPrompt(fmt.Sprintf("%s\033[31m»\033[0m ", r.Name))
 	return nil
 }
@@ -218,10 +255,11 @@ func NewStartRaceCmd() (StartRaceCmd, error) {
 
 // Execute execute the "start" command
 func (c StartRaceCmd) Execute(svc *service.ApplicationService, l *readline.Instance) error {
-	err := svc.StartCurrentRace(context.Background())
+	startedAt, err := svc.StartCurrentRace()
 	if err != nil {
 		return errors.Wrap(err, "failed to start race")
 	}
+	log.Infof("race started at %v", startedAt)
 	return nil
 }
 
@@ -247,7 +285,34 @@ func NewStopRaceCmd() (StopRaceCmd, error) {
 func (c StopRaceCmd) Execute(svc *service.ApplicationService, l *readline.Instance) error {
 	// e, err := svc.StopRace(context.Background())
 	// if err != nil {
-	// 	fmt.Fprintf(l.Stderr(), "failed to end race '%s': %v", c.RaceName, err)
+	// 	log.Error("failed to end race '%s': %v", c.RaceName, err)
 	// }
+	log.Error("not implemented yet!")
+	return nil
+}
+
+// ------------------------------------------------
+// Add lap
+// ------------------------------------------------
+
+// AddLapCmd the command to exit the program
+type AddLapCmd struct {
+	BaseCmd
+	bibnumber string
+}
+
+// NewAddLapCmd returns a new AddLapCmd
+func NewAddLapCmd(bibnumber string) (AddLapCmd, error) {
+	return AddLapCmd{
+		BaseCmd: BaseCmd{
+			Name: "lap",
+		},
+		bibnumber: bibnumber,
+	}, nil
+}
+
+// Execute execute the `help` command
+func (c AddLapCmd) Execute(svc *service.ApplicationService, l *readline.Instance) error {
+	log.Infof("adding 1 lap to team #%s", c.bibnumber)
 	return nil
 }

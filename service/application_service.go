@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -60,21 +59,21 @@ func (s *ApplicationService) RaceInUse() (model.Race, error) {
 }
 
 // StartCurrentRace set the current race to the one matching the given name
-func (s *ApplicationService) StartCurrentRace(ctx context.Context) error {
+func (s *ApplicationService) StartCurrentRace() (time.Time, error) {
 	if s.currentRace == model.UndefinedRace {
-		return errors.New("no race in use")
+		return time.Now(), errors.New("no race in use")
 	}
 	if s.currentRace.IsStarted() {
-		return errors.Errorf("current race already started at %v", s.currentRace.StartTimeStr())
+		return time.Now(), errors.Errorf("current race already started at %v", s.currentRace.StartTimeStr())
 	}
 	err := Transactional(s.baseService, func(app Repositories) error {
 		// TODO: check that no other race has started but not ended yet
 		return app.Races().Start(&s.currentRace)
 	})
 	if err != nil {
-		return errors.Wrap(err, "unable to start race")
+		return time.Now(), errors.Wrap(err, "unable to start race")
 	}
-	return nil
+	return s.currentRace.StartTime, nil
 }
 
 // ListTeams list the teams for the current race.

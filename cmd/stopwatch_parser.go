@@ -18,44 +18,40 @@ import (
 )
 
 // *****************************************************************************************
-// This file is generated after its sibling `stopwatch-grammar.peg` file. DO NOT MODIFY !
+// This file is generated after its sibling `root-grammar.peg` file. DO NOT MODIFY !
 // *****************************************************************************************
 
 var g = &grammar{
 	rules: []*rule{
 		{
-			name: "AnyCommand",
-			pos:  position{line: 18, col: 1, offset: 493},
+			name: "RootCommand",
+			pos:  position{line: 18, col: 1, offset: 488},
 			expr: &choiceExpr{
-				pos: position{line: 18, col: 15, offset: 507},
+				pos: position{line: 18, col: 16, offset: 503},
 				alternatives: []interface{}{
 					&ruleRefExpr{
-						pos:  position{line: 18, col: 15, offset: 507},
+						pos:  position{line: 18, col: 16, offset: 503},
 						name: "help",
 					},
 					&ruleRefExpr{
-						pos:  position{line: 18, col: 22, offset: 514},
+						pos:  position{line: 18, col: 23, offset: 510},
 						name: "exit",
 					},
 					&ruleRefExpr{
-						pos:  position{line: 18, col: 29, offset: 521},
-						name: "list",
+						pos:  position{line: 18, col: 30, offset: 517},
+						name: "races",
 					},
 					&ruleRefExpr{
-						pos:  position{line: 18, col: 36, offset: 528},
-						name: "use",
+						pos:  position{line: 18, col: 38, offset: 525},
+						name: "race",
 					},
 					&ruleRefExpr{
-						pos:  position{line: 18, col: 42, offset: 534},
-						name: "start",
+						pos:  position{line: 18, col: 45, offset: 532},
+						name: "teams",
 					},
 					&ruleRefExpr{
-						pos:  position{line: 18, col: 50, offset: 542},
-						name: "end",
-					},
-					&ruleRefExpr{
-						pos:  position{line: 18, col: 56, offset: 548},
-						name: "status",
+						pos:  position{line: 18, col: 53, offset: 540},
+						name: "lap",
 					},
 				},
 			},
@@ -63,27 +59,27 @@ var g = &grammar{
 		{
 			name:        "help",
 			displayName: "\"display the commands\"",
-			pos:         position{line: 23, col: 1, offset: 664},
+			pos:         position{line: 23, col: 1, offset: 653},
 			expr: &actionExpr{
-				pos: position{line: 23, col: 32, offset: 695},
+				pos: position{line: 23, col: 32, offset: 684},
 				run: (*parser).callonhelp1,
 				expr: &seqExpr{
-					pos: position{line: 23, col: 32, offset: 695},
+					pos: position{line: 23, col: 32, offset: 684},
 					exprs: []interface{}{
 						&litMatcher{
-							pos:        position{line: 23, col: 32, offset: 695},
+							pos:        position{line: 23, col: 32, offset: 684},
 							val:        "help",
 							ignoreCase: true,
 						},
 						&zeroOrMoreExpr{
-							pos: position{line: 23, col: 40, offset: 703},
+							pos: position{line: 23, col: 40, offset: 692},
 							expr: &ruleRefExpr{
-								pos:  position{line: 23, col: 40, offset: 703},
+								pos:  position{line: 23, col: 40, offset: 692},
 								name: "WS",
 							},
 						},
 						&ruleRefExpr{
-							pos:  position{line: 23, col: 45, offset: 708},
+							pos:  position{line: 23, col: 45, offset: 697},
 							name: "EOF",
 						},
 					},
@@ -93,27 +89,27 @@ var g = &grammar{
 		{
 			name:        "exit",
 			displayName: "\"exit the program\"",
-			pos:         position{line: 30, col: 1, offset: 857},
+			pos:         position{line: 30, col: 1, offset: 846},
 			expr: &actionExpr{
-				pos: position{line: 30, col: 28, offset: 884},
+				pos: position{line: 30, col: 28, offset: 873},
 				run: (*parser).callonexit1,
 				expr: &seqExpr{
-					pos: position{line: 30, col: 28, offset: 884},
+					pos: position{line: 30, col: 28, offset: 873},
 					exprs: []interface{}{
 						&litMatcher{
-							pos:        position{line: 30, col: 28, offset: 884},
+							pos:        position{line: 30, col: 28, offset: 873},
 							val:        "exit",
 							ignoreCase: true,
 						},
 						&zeroOrMoreExpr{
-							pos: position{line: 30, col: 36, offset: 892},
+							pos: position{line: 30, col: 36, offset: 881},
 							expr: &ruleRefExpr{
-								pos:  position{line: 30, col: 36, offset: 892},
+								pos:  position{line: 30, col: 36, offset: 881},
 								name: "WS",
 							},
 						},
 						&ruleRefExpr{
-							pos:  position{line: 30, col: 41, offset: 897},
+							pos:  position{line: 30, col: 41, offset: 886},
 							name: "EOF",
 						},
 					},
@@ -121,29 +117,29 @@ var g = &grammar{
 			},
 		},
 		{
-			name:        "list",
+			name:        "races",
 			displayName: "\"list the races\"",
-			pos:         position{line: 37, col: 1, offset: 1064},
+			pos:         position{line: 37, col: 1, offset: 1053},
 			expr: &actionExpr{
-				pos: position{line: 37, col: 26, offset: 1089},
-				run: (*parser).callonlist1,
+				pos: position{line: 37, col: 27, offset: 1079},
+				run: (*parser).callonraces1,
 				expr: &seqExpr{
-					pos: position{line: 37, col: 26, offset: 1089},
+					pos: position{line: 37, col: 27, offset: 1079},
 					exprs: []interface{}{
 						&litMatcher{
-							pos:        position{line: 37, col: 26, offset: 1089},
-							val:        "list",
+							pos:        position{line: 37, col: 27, offset: 1079},
+							val:        "races",
 							ignoreCase: true,
 						},
 						&zeroOrMoreExpr{
-							pos: position{line: 37, col: 34, offset: 1097},
+							pos: position{line: 37, col: 36, offset: 1088},
 							expr: &ruleRefExpr{
-								pos:  position{line: 37, col: 34, offset: 1097},
+								pos:  position{line: 37, col: 36, offset: 1088},
 								name: "WS",
 							},
 						},
 						&ruleRefExpr{
-							pos:  position{line: 37, col: 38, offset: 1101},
+							pos:  position{line: 37, col: 40, offset: 1092},
 							name: "EOF",
 						},
 					},
@@ -151,44 +147,44 @@ var g = &grammar{
 			},
 		},
 		{
-			name:        "use",
-			displayName: "\"use a the race\"",
-			pos:         position{line: 44, col: 1, offset: 1269},
+			name:        "race",
+			displayName: "\"race a the race\"",
+			pos:         position{line: 44, col: 1, offset: 1249},
 			expr: &actionExpr{
-				pos: position{line: 44, col: 25, offset: 1293},
-				run: (*parser).callonuse1,
+				pos: position{line: 44, col: 27, offset: 1275},
+				run: (*parser).callonrace1,
 				expr: &seqExpr{
-					pos: position{line: 44, col: 25, offset: 1293},
+					pos: position{line: 44, col: 27, offset: 1275},
 					exprs: []interface{}{
 						&litMatcher{
-							pos:        position{line: 44, col: 25, offset: 1293},
-							val:        "use",
+							pos:        position{line: 44, col: 27, offset: 1275},
+							val:        "race",
 							ignoreCase: true,
 						},
 						&oneOrMoreExpr{
-							pos: position{line: 44, col: 32, offset: 1300},
+							pos: position{line: 44, col: 35, offset: 1283},
 							expr: &ruleRefExpr{
-								pos:  position{line: 44, col: 32, offset: 1300},
+								pos:  position{line: 44, col: 35, offset: 1283},
 								name: "WS",
 							},
 						},
 						&labeledExpr{
-							pos:   position{line: 44, col: 36, offset: 1304},
+							pos:   position{line: 44, col: 39, offset: 1287},
 							label: "raceName",
 							expr: &ruleRefExpr{
-								pos:  position{line: 44, col: 46, offset: 1314},
+								pos:  position{line: 44, col: 49, offset: 1297},
 								name: "raceName",
 							},
 						},
 						&zeroOrMoreExpr{
-							pos: position{line: 44, col: 56, offset: 1324},
+							pos: position{line: 44, col: 59, offset: 1307},
 							expr: &ruleRefExpr{
-								pos:  position{line: 44, col: 56, offset: 1324},
+								pos:  position{line: 44, col: 59, offset: 1307},
 								name: "WS",
 							},
 						},
 						&ruleRefExpr{
-							pos:  position{line: 44, col: 60, offset: 1328},
+							pos:  position{line: 44, col: 63, offset: 1311},
 							name: "EOF",
 						},
 					},
@@ -197,24 +193,24 @@ var g = &grammar{
 		},
 		{
 			name: "raceName",
-			pos:  position{line: 48, col: 1, offset: 1399},
+			pos:  position{line: 48, col: 1, offset: 1364},
 			expr: &actionExpr{
-				pos: position{line: 48, col: 13, offset: 1411},
+				pos: position{line: 48, col: 13, offset: 1376},
 				run: (*parser).callonraceName1,
 				expr: &zeroOrMoreExpr{
-					pos: position{line: 48, col: 13, offset: 1411},
+					pos: position{line: 48, col: 13, offset: 1376},
 					expr: &seqExpr{
-						pos: position{line: 48, col: 14, offset: 1412},
+						pos: position{line: 48, col: 14, offset: 1377},
 						exprs: []interface{}{
 							&notExpr{
-								pos: position{line: 48, col: 14, offset: 1412},
+								pos: position{line: 48, col: 14, offset: 1377},
 								expr: &ruleRefExpr{
-									pos:  position{line: 48, col: 15, offset: 1413},
+									pos:  position{line: 48, col: 15, offset: 1378},
 									name: "EOF",
 								},
 							},
 							&anyMatcher{
-								line: 48, col: 19, offset: 1417,
+								line: 48, col: 19, offset: 1382,
 							},
 						},
 					},
@@ -223,28 +219,28 @@ var g = &grammar{
 		},
 		{
 			name:        "start",
-			displayName: "\"start the stopwatch for the race in use\"",
-			pos:         position{line: 55, col: 1, offset: 1571},
+			displayName: "\"start the stopwatch for the race in race\"",
+			pos:         position{line: 55, col: 1, offset: 1536},
 			expr: &actionExpr{
-				pos: position{line: 55, col: 52, offset: 1622},
+				pos: position{line: 55, col: 53, offset: 1588},
 				run: (*parser).callonstart1,
 				expr: &seqExpr{
-					pos: position{line: 55, col: 52, offset: 1622},
+					pos: position{line: 55, col: 53, offset: 1588},
 					exprs: []interface{}{
 						&litMatcher{
-							pos:        position{line: 55, col: 52, offset: 1622},
+							pos:        position{line: 55, col: 53, offset: 1588},
 							val:        "start",
 							ignoreCase: true,
 						},
 						&zeroOrMoreExpr{
-							pos: position{line: 55, col: 61, offset: 1631},
+							pos: position{line: 55, col: 62, offset: 1597},
 							expr: &ruleRefExpr{
-								pos:  position{line: 55, col: 61, offset: 1631},
+								pos:  position{line: 55, col: 62, offset: 1597},
 								name: "WS",
 							},
 						},
 						&ruleRefExpr{
-							pos:  position{line: 55, col: 65, offset: 1635},
+							pos:  position{line: 55, col: 66, offset: 1601},
 							name: "EOF",
 						},
 					},
@@ -253,28 +249,101 @@ var g = &grammar{
 		},
 		{
 			name:        "stop",
-			displayName: "\"stop the stopwatch for the race in use\"",
-			pos:         position{line: 62, col: 1, offset: 1804},
+			displayName: "\"stop the stopwatch for the race in race\"",
+			pos:         position{line: 62, col: 1, offset: 1752},
 			expr: &actionExpr{
-				pos: position{line: 62, col: 50, offset: 1853},
+				pos: position{line: 62, col: 51, offset: 1802},
 				run: (*parser).callonstop1,
 				expr: &seqExpr{
-					pos: position{line: 62, col: 50, offset: 1853},
+					pos: position{line: 62, col: 51, offset: 1802},
 					exprs: []interface{}{
 						&litMatcher{
-							pos:        position{line: 62, col: 50, offset: 1853},
+							pos:        position{line: 62, col: 51, offset: 1802},
 							val:        "stop",
 							ignoreCase: true,
 						},
 						&zeroOrMoreExpr{
-							pos: position{line: 62, col: 58, offset: 1861},
+							pos: position{line: 62, col: 59, offset: 1810},
 							expr: &ruleRefExpr{
-								pos:  position{line: 62, col: 58, offset: 1861},
+								pos:  position{line: 62, col: 59, offset: 1810},
 								name: "WS",
 							},
 						},
 						&ruleRefExpr{
-							pos:  position{line: 62, col: 62, offset: 1865},
+							pos:  position{line: 62, col: 63, offset: 1814},
+							name: "EOF",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "teams",
+			displayName: "\"list the teams\"",
+			pos:         position{line: 69, col: 1, offset: 1965},
+			expr: &actionExpr{
+				pos: position{line: 69, col: 27, offset: 1991},
+				run: (*parser).callonteams1,
+				expr: &seqExpr{
+					pos: position{line: 69, col: 27, offset: 1991},
+					exprs: []interface{}{
+						&litMatcher{
+							pos:        position{line: 69, col: 27, offset: 1991},
+							val:        "teams",
+							ignoreCase: true,
+						},
+						&zeroOrMoreExpr{
+							pos: position{line: 69, col: 36, offset: 2000},
+							expr: &ruleRefExpr{
+								pos:  position{line: 69, col: 36, offset: 2000},
+								name: "WS",
+							},
+						},
+						&ruleRefExpr{
+							pos:  position{line: 69, col: 40, offset: 2004},
+							name: "EOF",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "lap",
+			displayName: "\"add lap\"",
+			pos:         position{line: 76, col: 1, offset: 2157},
+			expr: &actionExpr{
+				pos: position{line: 76, col: 18, offset: 2174},
+				run: (*parser).callonlap1,
+				expr: &seqExpr{
+					pos: position{line: 76, col: 18, offset: 2174},
+					exprs: []interface{}{
+						&labeledExpr{
+							pos:   position{line: 76, col: 18, offset: 2174},
+							label: "bib",
+							expr: &actionExpr{
+								pos: position{line: 76, col: 23, offset: 2179},
+								run: (*parser).callonlap4,
+								expr: &oneOrMoreExpr{
+									pos: position{line: 76, col: 23, offset: 2179},
+									expr: &charClassMatcher{
+										pos:        position{line: 76, col: 23, offset: 2179},
+										val:        "[0-9]",
+										ranges:     []rune{'0', '9'},
+										ignoreCase: false,
+										inverted:   false,
+									},
+								},
+							},
+						},
+						&zeroOrMoreExpr{
+							pos: position{line: 78, col: 8, offset: 2231},
+							expr: &ruleRefExpr{
+								pos:  position{line: 78, col: 8, offset: 2231},
+								name: "WS",
+							},
+						},
+						&ruleRefExpr{
+							pos:  position{line: 78, col: 12, offset: 2235},
 							name: "EOF",
 						},
 					},
@@ -283,17 +352,17 @@ var g = &grammar{
 		},
 		{
 			name: "WS",
-			pos:  position{line: 70, col: 1, offset: 2027},
+			pos:  position{line: 87, col: 1, offset: 2391},
 			expr: &choiceExpr{
-				pos: position{line: 70, col: 7, offset: 2033},
+				pos: position{line: 87, col: 7, offset: 2397},
 				alternatives: []interface{}{
 					&litMatcher{
-						pos:        position{line: 70, col: 7, offset: 2033},
+						pos:        position{line: 87, col: 7, offset: 2397},
 						val:        " ",
 						ignoreCase: false,
 					},
 					&litMatcher{
-						pos:        position{line: 70, col: 13, offset: 2039},
+						pos:        position{line: 87, col: 13, offset: 2403},
 						val:        "\t",
 						ignoreCase: false,
 					},
@@ -302,11 +371,11 @@ var g = &grammar{
 		},
 		{
 			name: "EOF",
-			pos:  position{line: 72, col: 1, offset: 2045},
+			pos:  position{line: 89, col: 1, offset: 2409},
 			expr: &notExpr{
-				pos: position{line: 72, col: 8, offset: 2052},
+				pos: position{line: 89, col: 8, offset: 2416},
 				expr: &anyMatcher{
-					line: 72, col: 9, offset: 2053,
+					line: 89, col: 9, offset: 2417,
 				},
 			},
 		},
@@ -334,26 +403,24 @@ func (p *parser) callonexit1() (interface{}, error) {
 	return p.cur.onexit1()
 }
 
-func (c *current) onlist1() (interface{}, error) {
-	// list the races
+func (c *current) onraces1() (interface{}, error) {
 	return NewListRacesCmd()
 }
 
-func (p *parser) callonlist1() (interface{}, error) {
+func (p *parser) callonraces1() (interface{}, error) {
 	stack := p.vstack[len(p.vstack)-1]
 	_ = stack
-	return p.cur.onlist1()
+	return p.cur.onraces1()
 }
 
-func (c *current) onuse1(raceName interface{}) (interface{}, error) {
-	// list the races
+func (c *current) onrace1(raceName interface{}) (interface{}, error) {
 	return NewUseRaceCmd(raceName.(string))
 }
 
-func (p *parser) callonuse1() (interface{}, error) {
+func (p *parser) callonrace1() (interface{}, error) {
 	stack := p.vstack[len(p.vstack)-1]
 	_ = stack
-	return p.cur.onuse1(stack["raceName"])
+	return p.cur.onrace1(stack["raceName"])
 }
 
 func (c *current) onraceName1() (interface{}, error) {
@@ -367,7 +434,6 @@ func (p *parser) callonraceName1() (interface{}, error) {
 }
 
 func (c *current) onstart1() (interface{}, error) {
-	// list the races
 	return NewStartRaceCmd()
 }
 
@@ -378,7 +444,6 @@ func (p *parser) callonstart1() (interface{}, error) {
 }
 
 func (c *current) onstop1() (interface{}, error) {
-	// list the races
 	return NewStopRaceCmd()
 }
 
@@ -386,6 +451,40 @@ func (p *parser) callonstop1() (interface{}, error) {
 	stack := p.vstack[len(p.vstack)-1]
 	_ = stack
 	return p.cur.onstop1()
+}
+
+func (c *current) onteams1() (interface{}, error) {
+
+	return NewListTeamsCmd()
+}
+
+func (p *parser) callonteams1() (interface{}, error) {
+	stack := p.vstack[len(p.vstack)-1]
+	_ = stack
+	return p.cur.onteams1()
+}
+
+func (c *current) onlap4() (interface{}, error) {
+
+	return string(c.text), nil
+
+}
+
+func (p *parser) callonlap4() (interface{}, error) {
+	stack := p.vstack[len(p.vstack)-1]
+	_ = stack
+	return p.cur.onlap4()
+}
+
+func (c *current) onlap1(bib interface{}) (interface{}, error) {
+
+	return NewAddLapCmd(bib.(string))
+}
+
+func (p *parser) callonlap1() (interface{}, error) {
+	stack := p.vstack[len(p.vstack)-1]
+	_ = stack
+	return p.cur.onlap1(stack["bib"])
 }
 
 var (
