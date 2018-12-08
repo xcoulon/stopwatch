@@ -84,7 +84,7 @@ func (r *GormTeamRepository) Create(team *Team) error {
 // List lists all teams for a given race
 func (r *GormTeamRepository) List(raceID int) ([]Team, error) {
 	result := make([]Team, 0)
-	db := r.db.Where("race_id = ?", raceID).Order("bib_number ASC").Find(&result)
+	db := r.db.Preload("Laps").Where("race_id = ?", raceID).Order("bib_number ASC").Find(&result)
 	if err := db.Error; err != nil {
 		return result, errors.Wrap(err, "fail to list teams")
 	}
@@ -98,7 +98,7 @@ func (r *GormTeamRepository) FindIDByBibNumber(raceID int, bibnumber string) (in
 		fmt.Sprintf("select team_id from %s where race_id = ? and bib_number = ?", team.TableName()),
 		raceID, bibnumber).Scan(&team).Error
 	if err != nil {
-		return -1, errors.Wrap(err, "fail to find team by bibnumber")
+		return -1, errors.Wrapf(err, "fail to find team with bibnumber '%s' in race with id='%d'", bibnumber, raceID)
 	}
 	return team.ID, nil
 }

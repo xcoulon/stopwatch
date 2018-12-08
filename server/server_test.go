@@ -1,6 +1,8 @@
 package server_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -43,12 +46,78 @@ func (s *ServerTestSuite) SetupTest() {
 func (s *ServerTestSuite) TestStatusEndpoint() {
 
 	s.T().Run("ok", func(t *testing.T) {
-		// given
+		// when
 		req := httptest.NewRequest(echo.GET, "http://localhost:8080/api/status", nil)
 		rec := httptest.NewRecorder()
 		c := s.srv.NewContext(req, rec)
-		// Assertions
+		// then
 		assert.NoError(t, server.Status(c))
+	})
+}
+
+func (s *ServerTestSuite) TestListRaces() {
+
+	s.T().Run("ok", func(t *testing.T) {
+		// given 3 races
+		raceRepo := model.NewRaceRepository(s.DB)
+		for i := 0; i < 5; i++ {
+			race := model.Race{
+				Name: fmt.Sprintf("race %s", uuid.NewV4()),
+			}
+			err := raceRepo.Create(&race)
+			require.NoError(t, err)
+		}
+		// when
+		req := httptest.NewRequest(echo.GET, "/", nil)
+		rec := httptest.NewRecorder()
+		c := s.srv.NewContext(req, rec)
+		c.SetPath("/api/races")
+		err := server.ListRaces(s.svc)(c)
+		// then
+		require.NoError(t, err)
+		var races interface{}
+		err = json.Unmarshal(rec.Body.Bytes(), &races)
+		require.NoError(t, err)
+		assert.IsType(t, races, []interface{}{})
+		assert.True(t, len(races.([]interface{})) >= 5) // in case there are already other races in the DB
+	})
+}
+func (s *ServerTestSuite) TestListTeams() {
+
+	s.T().Run("ok", func(t *testing.T) {
+		// given 3 teams in a race
+		raceRepo := model.NewRaceRepository(s.DB)
+		race := model.Race{
+			Name: fmt.Sprintf("race %s", uuid.NewV4()),
+		}
+		err := raceRepo.Create(&race)
+		require.NoError(t, err)
+		teamRepo := model.NewTeamRepository(s.DB)
+		for i := 0; i < 5; i++ {
+			team := model.Team{
+				BibNumber: fmt.Sprintf("%d", i),
+				Name:      fmt.Sprintf("team %d %s", i, uuid.NewV4()),
+				RaceID:    race.ID,
+			}
+			teamRepo.Create(&team)
+		}
+		require.NoError(t, err)
+		// when
+		req := httptest.NewRequest(echo.GET, "/", nil)
+		rec := httptest.NewRecorder()
+		c := s.srv.NewContext(req, rec)
+		c.SetPath("/api/races/:raceID/teams")
+		c.SetParamNames("raceID")
+		c.SetParamValues(strconv.Itoa(race.ID))
+		err = server.ListTeams(s.svc)(c)
+		// then
+		require.NoError(t, err)
+		var teams interface{}
+		err = json.Unmarshal(rec.Body.Bytes(), &teams)
+		require.NoError(t, err)
+		assert.IsType(t, teams, []interface{}{})
+		teams = teams.([]interface{})
+		require.Len(t, teams, 5)
 	})
 }
 
@@ -68,20 +137,17 @@ func (s *ServerTestSuite) TestAddLap() {
 			RaceID:    race.ID,
 		}
 		teamRepo.Create(&team)
-
+		// when
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
 		rec := httptest.NewRecorder()
 		c := s.srv.NewContext(req, rec)
 		c.SetPath("/api/races/:raceID/teams/:bibNumber")
 		c.SetParamNames("raceID", "bibNumber")
 		c.SetParamValues(strconv.Itoa(race.ID), team.BibNumber)
-		h := server.AddLap(s.svc)
-
-		// Assertions
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusCreated, rec.Code)
-		}
-
+		err := server.AddLap(s.svc)(c)
+		// then
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusCreated, rec.Code)
 	})
 
 }

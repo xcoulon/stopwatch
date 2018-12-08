@@ -3,6 +3,7 @@ package model_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -154,13 +155,14 @@ func (s *TeamRepositoryTestSuite) TestListTeamsSingleResult() {
 	// then
 	require.NoError(s.T(), err)
 	require.Len(s.T(), teams, 1)
-	assert.Equal(s.T(), team, teams[0])
+	assert.Equal(s.T(), team.ID, teams[0].ID)
 }
 
 func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 	// given
 	raceRepo := model.NewRaceRepository(s.DB)
 	teamRepo := model.NewTeamRepository(s.DB)
+	lapRepo := model.NewLapRepository(s.DB)
 	race := model.Race{
 		Name: fmt.Sprintf("race %s", uuid.NewV4()),
 	}
@@ -173,6 +175,13 @@ func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 		RaceID:    race.ID,
 	}
 	err = teamRepo.Create(&team1)
+	require.NoError(s.T(), err)
+	lap1 := model.Lap{
+		RaceID: race.ID,
+		TeamID: team1.ID,
+		Time:   time.Now(),
+	}
+	err = lapRepo.Create(&lap1)
 	require.NoError(s.T(), err)
 	bibNumber2 := fmt.Sprintf("1 %s", uuid.NewV4().String())
 	team2 := model.Team{
@@ -187,6 +196,7 @@ func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 	// then
 	require.NoError(s.T(), err)
 	require.Len(s.T(), teams, 2)
-	assert.Equal(s.T(), team2, teams[0])
-	assert.Equal(s.T(), team1, teams[1])
+	assert.Equal(s.T(), team2.ID, teams[0].ID)
+	assert.Equal(s.T(), team1.ID, teams[1].ID)
+	assert.Len(s.T(), teams[1].Laps, 1)
 }

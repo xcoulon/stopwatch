@@ -34,6 +34,20 @@ func (s *ApplicationService) ListRaces() ([]model.Race, error) {
 	return result, nil
 }
 
+// GetRace get the race given its ID
+func (s *ApplicationService) GetRace(id int) (model.Race, error) {
+	var result model.Race
+	err := Transactional(s.baseService, func(app Repositories) error {
+		var err error
+		result, err = app.Races().Lookup(id)
+		return err
+	})
+	if err != nil {
+		return result, errors.Wrapf(err, "unable to get race with id=%d", id)
+	}
+	return result, nil
+}
+
 // StartRace set the current race to the one matching the given name
 func (s *ApplicationService) StartRace(raceID int) (time.Time, error) {
 	var race model.Race

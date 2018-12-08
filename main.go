@@ -31,10 +31,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// err = connection.SetupUUIDExtension(config)
-	// if err != nil {
-	// 	logrus.Fatalf("failed to start: %s", err.Error())
-	// }
 	db, err := connection.NewUserConnection(config)
 	if err != nil {
 		logrus.Fatalf("failed to start: %s", err.Error())

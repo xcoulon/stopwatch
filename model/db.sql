@@ -19,7 +19,7 @@ CREATE TABLE team (
 
 -- Add a foreign key constraint to race
 ALTER TABLE team add constraint team_race_fk foreign key (race_id) REFERENCES race (race_id);
-CREATE UNIQUE INDEX uix_team_bibnumber ON team USING btree (bib_number);
+CREATE UNIQUE INDEX uix_team_bibnumber ON team USING btree (race_id, bib_number);
 
 -- laps
 CREATE TABLE lap (
