@@ -5,13 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vatriathlon/stopwatch/configuration"
+	"github.com/vatriathlon/stopwatch/model"
+	testmodel "github.com/vatriathlon/stopwatch/test/model"
+	testsuite "github.com/vatriathlon/stopwatch/test/suite"
+
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"github.com/vatriathlon/stopwatch/configuration"
-	"github.com/vatriathlon/stopwatch/model"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
 )
 
 func TestTeamRepository(t *testing.T) {
@@ -38,12 +40,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 	s.T().Run("ok", func(t *testing.T) {
 		// given
-		number := uuid.NewV4().String()
-		team := model.Team{
-			Name:      fmt.Sprintf("team %s", number),
-			BibNumber: number,
-			RaceID:    race.ID,
-		}
+		team := testmodel.NewTeam(race.ID, "1")
 		// when
 		err := teamRepo.Create(&team)
 		// then
@@ -55,12 +52,8 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 		t.Run("missing name", func(t *testing.T) {
 			// given
-			number := uuid.NewV4().String()
-			team := model.Team{
-				Name:      "",
-				BibNumber: number,
-				RaceID:    race.ID,
-			}
+			team := testmodel.NewTeam(race.ID, "1")
+			team.Name = ""
 			// when
 			err := teamRepo.Create(&team)
 			// then
@@ -69,12 +62,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 		t.Run("missing bib number", func(t *testing.T) {
 			// given
-			number := uuid.NewV4().String()
-			team := model.Team{
-				Name:      fmt.Sprintf("team %s", number),
-				BibNumber: "",
-				RaceID:    race.ID,
-			}
+			team := testmodel.NewTeam(race.ID, "")
 			// when
 			err := teamRepo.Create(&team)
 			// then
@@ -83,20 +71,11 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 		t.Run("duplicate bib number", func(t *testing.T) {
 			// given
-			number := uuid.NewV4().String()
-			team1 := model.Team{
-				Name:      fmt.Sprintf("team foo %s", number),
-				BibNumber: number,
-				RaceID:    race.ID,
-			}
+			team1 := testmodel.NewTeam(race.ID, "2")
 			err := teamRepo.Create(&team1)
 			require.NoError(t, err)
 			// when
-			team2 := model.Team{
-				Name:      fmt.Sprintf("team bar %s", number),
-				BibNumber: number,
-				RaceID:    race.ID,
-			}
+			team2 := testmodel.NewTeam(race.ID, "2")
 			err = teamRepo.Create(&team2)
 			// then
 			require.Error(t, err)
@@ -104,11 +83,8 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 		t.Run("missing race ID", func(t *testing.T) {
 			// given
-			number := uuid.NewV4().String()
-			team := model.Team{
-				Name:      fmt.Sprintf("team %s", number),
-				BibNumber: number,
-			}
+			team := testmodel.NewTeam(race.ID, "1")
+			team.RaceID = 0
 			// when
 			err := teamRepo.Create(&team)
 			// then
@@ -142,12 +118,7 @@ func (s *TeamRepositoryTestSuite) TestListTeamsSingleResult() {
 	}
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
-	bibNumber := uuid.NewV4().String()
-	team := model.Team{
-		Name:      fmt.Sprintf("team foo %s", bibNumber),
-		BibNumber: bibNumber,
-		RaceID:    race.ID,
-	}
+	team := testmodel.NewTeam(race.ID, "1")
 	err = teamRepo.Create(&team)
 	require.NoError(s.T(), err)
 	// when
@@ -168,12 +139,7 @@ func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 	}
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
-	bibNumber1 := fmt.Sprintf("2 %s", uuid.NewV4().String())
-	team1 := model.Team{
-		Name:      fmt.Sprintf("team foo %s", bibNumber1),
-		BibNumber: bibNumber1,
-		RaceID:    race.ID,
-	}
+	team1 := testmodel.NewTeam(race.ID, "2")
 	err = teamRepo.Create(&team1)
 	require.NoError(s.T(), err)
 	lap1 := model.Lap{
@@ -183,12 +149,7 @@ func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 	}
 	err = lapRepo.Create(&lap1)
 	require.NoError(s.T(), err)
-	bibNumber2 := fmt.Sprintf("1 %s", uuid.NewV4().String())
-	team2 := model.Team{
-		Name:      fmt.Sprintf("team bar %s", bibNumber2),
-		BibNumber: bibNumber2,
-		RaceID:    race.ID,
-	}
+	team2 := testmodel.NewTeam(race.ID, "1")
 	err = teamRepo.Create(&team2)
 	require.NoError(s.T(), err)
 	// when

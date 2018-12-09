@@ -37,11 +37,20 @@ func New(svc service.ApplicationService) *echo.Echo {
 	}
 	e.GET("/api/status", Status)
 	e.GET("/api/races", ListRaces(svc))
-	e.GET("/api/races/:raceID", ShowRace(svc))
-	e.GET("/api/races/:raceID/teams", ListTeams(svc))
-	e.POST("/api/races/:raceID/bibnumber/:bibnumber/laps", AddLap(svc))
+	e.GET(ShopwRacePathTmpl, ShowRace(svc))
+	e.GET(ListTeamsPathTmpl, ListTeams(svc))
+	e.POST(AddLapPathTmpl, AddLap(svc))
 	return e
 }
+
+const (
+	// ShopwRacePathTmpl the path template to get a single race by its ID
+	ShopwRacePathTmpl = "/api/races/:raceID"
+	// ListTeamsPathTmpl the path template to list all teams in a race
+	ListTeamsPathTmpl = "/api/races/:raceID/teams"
+	// AddLapPathTmpl the path template for add a lap to a team in a race
+	AddLapPathTmpl = "/api/races/:raceID/bibnumber/:bibnumber/laps"
+)
 
 // Status returns a basic `ping/pong` handler
 func Status(c echo.Context) error {

@@ -5,14 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vatriathlon/stopwatch/configuration"
 	"github.com/vatriathlon/stopwatch/model"
+	testmodel "github.com/vatriathlon/stopwatch/test/model"
+	testsuite "github.com/vatriathlon/stopwatch/test/suite"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"github.com/vatriathlon/stopwatch/configuration"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
 )
 
 func TestLapRepository(t *testing.T) {
@@ -36,17 +37,10 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 	}
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
-
-	team1 := model.Team{
-		Name:   "bar1",
-		RaceID: race.ID,
-	}
+	team1 := testmodel.NewTeam(race.ID, "1")
 	err = teamRepo.Create(&team1)
 	require.NoError(s.T(), err)
-	team2 := model.Team{
-		Name:   "bar2",
-		RaceID: race.ID,
-	}
+	team2 := testmodel.NewTeam(race.ID, "2")
 	err = teamRepo.Create(&team2)
 	require.NoError(s.T(), err)
 

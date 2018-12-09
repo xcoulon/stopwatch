@@ -2,6 +2,7 @@ package suite
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
@@ -13,17 +14,14 @@ import (
 // entities in reverse order on function exit.
 //
 func DeleteCreatedEntities(db *gorm.DB) func() {
-	hookName := "mighti:record"
+	hookName := fmt.Sprintf("stopwatch:record:%s", uuid.NewV4().String())
 	type entity struct {
 		table   string
 		keyname string
 		key     interface{}
 	}
 	var entires []entity
-	hookRegistered := db.Callback().Create().Get(hookName) != nil
-	if hookRegistered {
-		hookName += "-" + uuid.NewV4().String()
-	}
+	db.Callback().Create().Get(hookName)
 	db.Callback().Create().After("gorm:create").Register(hookName, func(scope *gorm.Scope) {
 		log.Debugf("Inserted entities from %s with %s=%v", scope.TableName(), scope.PrimaryKey(), scope.PrimaryKeyValue())
 		entires = append(entires, entity{table: scope.TableName(), keyname: scope.PrimaryKey(), key: scope.PrimaryKeyValue()})

@@ -2,27 +2,41 @@ package model
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 )
 
-// Team a team of runner/rider who participates in a given race
+// Team a team of 2 runner/rider who participates in a given race
 type Team struct {
-	ID        int `gorm:"primary_key;column:team_id"`
-	Name      string
-	BibNumber string
-	RaceID    int   `gorm:"column:race_id"`
-	Laps      []Lap `gorm:"foreignkey:TeamID"`
+	ID        int        `gorm:"primary_key;column:team_id"`
+	Name      string     `gorm:"column:name"`
+	Gender    string     `gorm:"column:gender"`
+	Challenge string     `gorm:"column:challenge"`
+	Category  string     `gorm:"column:category"`
+	BibNumber string     `gorm:"column:bib_number"`
+	Member1   TeamMember `gorm:"embedded;embedded_prefix:member1_"`
+	Member2   TeamMember `gorm:"embedded;embedded_prefix:member2_"`
+	RaceID    int        `gorm:"column:race_id"`
+	Laps      []Lap      `gorm:"foreignkey:TeamID"`
+}
+
+// TeamMember a member of a team
+type TeamMember struct {
+	FirstName   string `gorm:"column:first_name"`
+	LastName    string
+	DateOfBirth time.Time
+	Gender      string
 }
 
 const (
-	teamsTableName = "team"
+	teamTableName = "team"
 )
 
 // TableName implements gorm.tabler
 func (t Team) TableName() string {
-	return teamsTableName
+	return teamTableName
 }
 
 // Ensure Team implements the Equaler interface

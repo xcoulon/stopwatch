@@ -2,11 +2,13 @@ package service_test
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/vatriathlon/stopwatch/configuration"
 	"github.com/vatriathlon/stopwatch/model"
 	"github.com/vatriathlon/stopwatch/service"
+	testmodel "github.com/vatriathlon/stopwatch/test/model"
 	testsuite "github.com/vatriathlon/stopwatch/test/suite"
 
 	uuid "github.com/satori/go.uuid"
@@ -102,12 +104,9 @@ func (s *ServiceTestSuite) TestListTeams() {
 		require.NoError(t, err)
 		teamRepo := model.NewTeamRepository(s.DB)
 		for i := 0; i < 5; i++ {
-			team := model.Team{
-				BibNumber: fmt.Sprintf("%d", i),
-				Name:      fmt.Sprintf("team %d %s", i, uuid.NewV4()),
-				RaceID:    race.ID,
-			}
-			teamRepo.Create(&team)
+			team := testmodel.NewTeam(race.ID, strconv.Itoa(i))
+			err := teamRepo.Create(&team)
+			require.NoError(t, err)
 		}
 		require.NoError(t, err)
 		svc := service.NewApplicationService(s.DB)
@@ -132,12 +131,8 @@ func (s *ServiceTestSuite) TestAddLap() {
 	teamRepo := model.NewTeamRepository(s.DB)
 	teams := []model.Team{}
 	for i := 0; i < 5; i++ {
-		team := model.Team{
-			BibNumber: fmt.Sprintf("%d", i),
-			Name:      fmt.Sprintf("team %d %s", i, uuid.NewV4()),
-			RaceID:    race.ID,
-		}
-		teamRepo.Create(&team)
+		team := testmodel.NewTeam(race.ID, strconv.Itoa(i))
+		err := teamRepo.Create(&team)
 		require.NoError(s.T(), err)
 		teams = append(teams, team)
 	}
@@ -153,12 +148,14 @@ func (s *ServiceTestSuite) TestAddLap() {
 			assert.Len(t, team.Laps, 1)
 		})
 
-		t.Run("team 0 lap 2", func(t *testing.T) {
+		t.Run("team 1 lap 2", func(t *testing.T) {
 			// when
-			team, err := svc.AddLap(race.ID, "0")
+			_, err := svc.AddLap(race.ID, "1")
+			require.NoError(t, err)
+			team, err := svc.AddLap(race.ID, "1")
 			// then
 			require.NoError(t, err)
-			require.Equal(t, teams[0].Name, team.Name)
+			require.Equal(t, teams[1].Name, team.Name)
 			assert.Len(t, team.Laps, 2)
 		})
 	})

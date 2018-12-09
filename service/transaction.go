@@ -28,10 +28,7 @@ func Transactional(svc *GormService, todo func(r Repositories) error) error {
 	var tx Transaction
 	var err error
 	if tx, err = svc.BeginTransaction(); err != nil {
-		logrus.Error(nil, map[string]interface{}{
-			"err": err,
-		}, "database BeginTransaction failed!")
-
+		logrus.WithError(err).Error("database BeginTransaction failed!")
 		return errors.WithStack(err)
 	}
 
@@ -52,32 +49,22 @@ func Transactional(svc *GormService, todo func(r Repositories) error) error {
 		case err := <-errorChan:
 			if err != nil {
 				logrus.Warn("Rolling back the transaction...")
-				logrus.Error(nil, map[string]interface{}{
-					"err": err,
-				}, "database transaction failed. Rolling back...")
+				logrus.WithError(err).Error("database transaction failed. Rolling back...")
 				if err2 := tx.Rollback(); err2 != nil {
-					logrus.Error(nil, map[string]interface{}{
-						"err": err2,
-					}, "database transaction rollback failed!")
+					logrus.WithError(err2).Error("database transaction rollback failed!")
 				}
 				return errors.WithStack(err)
 			}
 			if err := tx.Commit(); err != nil {
-				logrus.Error(nil, map[string]interface{}{
-					"err": err,
-				}, "database transaction commit failed!")
+				logrus.WithError(err).Error("database transaction commit failed!")
 			}
 			logrus.Debug("Commit the transaction!")
 			return nil
 		case <-txTimeout:
 			logrus.Debug("Rolling back the transaction...")
-			logrus.Error(nil, map[string]interface{}{
-				"err": err,
-			}, "database transaction timeout. Rolling back...")
+			logrus.WithError(err).Error("database transaction timeout. Rolling back...")
 			if err2 := tx.Rollback(); err2 != nil {
-				logrus.Error(nil, map[string]interface{}{
-					"err": err2,
-				}, "database transaction rollback failed!")
+				logrus.WithError(err2).Error("database transaction rollback failed!")
 			}
 			return errors.New("database transaction timeout")
 		}
