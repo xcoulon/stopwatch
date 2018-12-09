@@ -1,6 +1,12 @@
 package service
 
 import (
+	"encoding/csv"
+	"io"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -106,4 +112,104 @@ func (s *ApplicationService) AddLap(raceID int, bibnumber string) (model.Team, e
 	}
 
 	return team, nil
+}
+
+// ImportFromFile imports the data from the given file
+func (s *ApplicationService) ImportFromFile(filename string) error {
+	// list races once for all and map by name
+	races := map[string]model.Race{}
+	err := Transactional(s.baseService, func(app Repositories) error {
+		all, err := app.Races().List()
+		if err != nil {
+			return err
+		}
+		for _, r := range all {
+			races[r.Name] = r
+		}
+		return nil
+	})
+	if err != nil {
+		return errors.Wrapf(err, "unable to load data")
+	}
+
+	var headers []string
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	r := csv.NewReader(file)
+	undefinedMember := model.TeamMember{}
+	teamMember1 := undefinedMember
+	teamMember2 := undefinedMember
+
+	bibNumberSeq := 1
+	for {
+		record, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if headers == nil {
+			headers = record
+		} else {
+			if teamMember1 == undefinedMember {
+				teamMember1, err = newTeamMember(record)
+				if err != nil {
+					return errors.Wrapf(err, "unable to create team member from %v", record)
+				}
+			} else {
+				teamMember2, err = newTeamMember(record)
+				if err != nil {
+					return errors.Wrapf(err, "unable to create team member from %v", record)
+				}
+				bibNumber := record[10]
+				if bibNumber == "" {
+					bibNumberSeq++
+					bibNumber = strconv.Itoa(bibNumberSeq)
+				}
+				team := model.Team{
+					Name:      record[9],
+					Category:  record[5],
+					Challenge: record[11],
+					BibNumber: bibNumber,
+					Member1:   teamMember1,
+					Member2:   teamMember2,
+					Gender:    genderFrom(teamMember1, teamMember2),
+					RaceID:    races[record[5]].ID,
+				}
+				err := Transactional(s.baseService, func(app Repositories) error {
+					return app.Teams().Create(&team)
+				})
+				if err != nil {
+					return errors.Wrapf(err, "unable to create team from %v", team)
+				}
+				// reset
+				teamMember1 = undefinedMember
+				teamMember2 = undefinedMember
+			}
+		}
+	}
+	return nil
+}
+
+func genderFrom(teamMember1, teamMember2 model.TeamMember) string {
+	genders := []string{teamMember1.Gender, teamMember2.Gender}
+	sort.Strings(genders)
+	return strings.Join(genders, "")
+}
+
+func newTeamMember(record []string) (model.TeamMember, error) {
+	dateOfBirth, err := time.Parse("02/01/2006", record[3])
+	if err != nil {
+		return model.TeamMember{}, errors.Wrapf(err, "unable to parse date '%s'", record[3])
+	}
+	return model.TeamMember{
+		FirstName:   record[1],
+		LastName:    record[2],
+		DateOfBirth: dateOfBirth,
+		Gender:      record[4],
+	}, nil
 }

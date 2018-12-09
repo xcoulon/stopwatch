@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,6 +28,10 @@ func init() {
 }
 
 func main() {
+	var importFile string
+	flag.StringVar(&importFile, "import", "", "imports the file in the database.")
+	flag.Parse()
+
 	config, err := configuration.New()
 	if err != nil {
 		panic(err)
@@ -41,6 +46,15 @@ func main() {
 	svc := service.NewApplicationService(db)
 	// handle shutdown
 	go handleShutdown(db)
+
+	if importFile != "" {
+		logrus.WithField("file", importFile).Info("importing...")
+		err := svc.ImportFromFile(importFile)
+		if err != nil {
+			logrus.Fatalf("failed to import from file: %s", err.Error())
+		}
+		return
+	}
 
 	s := server.New(svc)
 	// listen and serve on 0.0.0.0:8080
