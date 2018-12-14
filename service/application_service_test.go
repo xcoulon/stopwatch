@@ -2,7 +2,6 @@ package service_test
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/vatriathlon/stopwatch/configuration"
@@ -103,8 +102,8 @@ func (s *ServiceTestSuite) TestListTeams() {
 		err := raceRepo.Create(&race)
 		require.NoError(t, err)
 		teamRepo := model.NewTeamRepository(s.DB)
-		for i := 0; i < 5; i++ {
-			team := testmodel.NewTeam(race.ID, strconv.Itoa(i))
+		for i := 1; i < 6; i++ {
+			team := testmodel.NewTeam(race.ID, i)
 			err := teamRepo.Create(&team)
 			require.NoError(t, err)
 		}
@@ -130,8 +129,8 @@ func (s *ServiceTestSuite) TestAddLap() {
 	svc := service.NewApplicationService(s.DB)
 	teamRepo := model.NewTeamRepository(s.DB)
 	teams := []model.Team{}
-	for i := 0; i < 5; i++ {
-		team := testmodel.NewTeam(race.ID, strconv.Itoa(i))
+	for i := 1; i < 6; i++ {
+		team := testmodel.NewTeam(race.ID, i)
 		err := teamRepo.Create(&team)
 		require.NoError(s.T(), err)
 		teams = append(teams, team)
@@ -139,24 +138,69 @@ func (s *ServiceTestSuite) TestAddLap() {
 
 	s.T().Run("ok", func(t *testing.T) {
 
-		t.Run("team 0 lap 1", func(t *testing.T) {
+		t.Run("team 1 lap 1", func(t *testing.T) {
 			// when
-			team, err := svc.AddLap(race.ID, "0")
+			team, err := svc.AddLap(race.ID, 1)
 			// then
 			require.NoError(t, err)
 			require.Equal(t, teams[0].Name, team.Name)
 			assert.Len(t, team.Laps, 1)
 		})
 
-		t.Run("team 1 lap 2", func(t *testing.T) {
+		t.Run("team 2 lap 1+2", func(t *testing.T) {
 			// when
-			_, err := svc.AddLap(race.ID, "1")
+			_, err := svc.AddLap(race.ID, 2)
 			require.NoError(t, err)
-			team, err := svc.AddLap(race.ID, "1")
+			team, err := svc.AddLap(race.ID, 2)
 			// then
 			require.NoError(t, err)
 			require.Equal(t, teams[1].Name, team.Name)
 			assert.Len(t, team.Laps, 2)
 		})
 	})
+}
+
+func (s *ServiceTestSuite) TestGetTeamAgeCategory() {
+
+	testcases := map[string]struct {
+		category1 string
+		category2 string
+		expected  string
+	}{
+		"Poussin/Poussin": {
+			service.Poussin,
+			service.Poussin,
+			service.Poussin,
+		},
+		"Poussin/Pupille": {
+			service.Poussin,
+			service.Pupille,
+			service.Pupille,
+		},
+		"Benjamin/Minime": {
+			service.Benjamin,
+			service.Minime,
+			service.Minime,
+		},
+		"Senior/Senior": {
+			service.Senior,
+			service.Senior,
+			service.Senior,
+		},
+		"Veteran/Senior": {
+			service.Veteran,
+			service.Senior,
+			service.Senior,
+		},
+	}
+	for testname, testdata := range testcases {
+		s.T().Run(testname, func(t *testing.T) {
+			// when
+			result := service.GetTeamAgeCategory(testdata.category1, testdata.category2)
+			// then
+			assert.Equal(t, testdata.expected, result)
+		})
+
+	}
+
 }

@@ -93,8 +93,8 @@ func (s *ServerTestSuite) TestListTeams() {
 		err := raceRepo.Create(&race)
 		require.NoError(t, err)
 		teamRepo := model.NewTeamRepository(s.DB)
-		for i := 0; i < 5; i++ {
-			team := testmodel.NewTeam(race.ID, strconv.Itoa(i))
+		for i := 1; i < 6; i++ {
+			team := testmodel.NewTeam(race.ID, i)
 			err := teamRepo.Create(&team)
 			require.NoError(t, err)
 		}
@@ -129,7 +129,7 @@ func (s *ServerTestSuite) TestAddLap() {
 		err := raceRepo.Create(&race)
 		require.NoError(t, err)
 		teamRepo := model.NewTeamRepository(s.DB)
-		team := testmodel.NewTeam(race.ID, "1")
+		team := testmodel.NewTeam(race.ID, 1)
 		err = teamRepo.Create(&team)
 		require.NoError(t, err)
 		// when
@@ -138,7 +138,7 @@ func (s *ServerTestSuite) TestAddLap() {
 		c := s.srv.NewContext(req, rec)
 		c.SetPath(server.AddLapPathTmpl)
 		c.SetParamNames("raceID", "bibnumber")
-		c.SetParamValues(strconv.Itoa(race.ID), team.BibNumber)
+		c.SetParamValues(strconv.Itoa(race.ID), strconv.Itoa(team.BibNumber))
 		err = server.AddLap(s.svc)(c)
 		// then
 		require.NoError(t, err)

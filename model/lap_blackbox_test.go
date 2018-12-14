@@ -37,10 +37,10 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 	}
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
-	team1 := testmodel.NewTeam(race.ID, "1")
+	team1 := testmodel.NewTeam(race.ID, 1)
 	err = teamRepo.Create(&team1)
 	require.NoError(s.T(), err)
-	team2 := testmodel.NewTeam(race.ID, "2")
+	team2 := testmodel.NewTeam(race.ID, 2)
 	err = teamRepo.Create(&team2)
 	require.NoError(s.T(), err)
 

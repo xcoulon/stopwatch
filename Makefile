@@ -6,6 +6,7 @@ INSTALL_PREFIX=$(CUR_DIR)/bin
 VENDOR_DIR=vendor
 SOURCE_DIR ?= .
 BINARY_PATH=$(INSTALL_PREFIX)/stopwatch
+FRESH_BIN=$(VENDOR_DIR)/github.com/pilu/fresh/fresh
 
 # Call this function with $(call log-info,"Your message")
 define log-info =
@@ -81,9 +82,13 @@ build: $(INSTALL_PREFIX) deps
 start-database:
 	docker-compose up -d db
 
-.PHONY: dev
+$(FRESH_BIN): $(VENDOR_DIR)
+	cd $(VENDOR_DIR)/github.com/pilu/fresh && go build -v
+
+.PHONY: dev 
 ## run with fresh
-dev: start-database
+dev: start-database $(FRESH_BIN)
+	$(FRESH_BIN)
 
 
 .PHONY: lint

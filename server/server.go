@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -37,15 +38,18 @@ func New(svc service.ApplicationService) *echo.Echo {
 	}
 	e.GET("/api/status", Status)
 	e.GET("/api/races", ListRaces(svc))
-	e.GET(ShopwRacePathTmpl, ShowRace(svc))
+	e.GET(ShowRacePathTmpl, ShowRace(svc))
+	e.PATCH(StartRacePathTmpl, StartRace(svc))
 	e.GET(ListTeamsPathTmpl, ListTeams(svc))
 	e.POST(AddLapPathTmpl, AddLap(svc))
 	return e
 }
 
 const (
-	// ShopwRacePathTmpl the path template to get a single race by its ID
-	ShopwRacePathTmpl = "/api/races/:raceID"
+	// ShowRacePathTmpl the path template to get a single race by its ID
+	ShowRacePathTmpl = "/api/races/:raceID"
+	// StartRacePathTmpl the path template to start a race
+	StartRacePathTmpl = "/api/races/:raceID"
 	// ListTeamsPathTmpl the path template to list all teams in a race
 	ListTeamsPathTmpl = "/api/races/:raceID/teams"
 	// AddLapPathTmpl the path template for add a lap to a team in a race
@@ -72,6 +76,30 @@ func ShowRace(svc service.ApplicationService) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		return c.JSON(http.StatusOK, race)
+	}
+}
+
+// StartRace returns a handler to mark a race as started
+func StartRace(svc service.ApplicationService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		scheme := c.Scheme()
+		host := c.Request().Host
+		logrus.Debugf("Processing incoming request on %s://%s%s", scheme, host, c.Request().URL)
+		_, err := strconv.Atoi(c.Param("raceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("unable to convert race id '%s' to integer", c.Param("raceID")))
+		}
+		var payload interface{}
+		err = json.NewDecoder(c.Request().Body).Decode(&payload)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		logrus.Infof("race patch payload: %v", payload)
+		// race, err := svc.StartRace(raceID)
+		// if err != nil {
+		// 	return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		// }
+		return c.NoContent(204)
 	}
 }
 
@@ -117,7 +145,10 @@ func AddLap(svc service.ApplicationService) echo.HandlerFunc {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("unable to convert race id '%s' to integer", c.Param("raceID")))
 		}
-		bibnumber := c.Param("bibnumber")
+		bibnumber, err := strconv.Atoi(c.Param("bibnumber"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("unable to convert bidnumber '%s' to integer", c.Param("raceID")))
+		}
 		team, err := svc.AddLap(raceID, bibnumber)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

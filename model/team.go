@@ -10,24 +10,26 @@ import (
 
 // Team a team of 2 runner/rider who participates in a given race
 type Team struct {
-	ID        int        `gorm:"primary_key;column:team_id"`
-	Name      string     `gorm:"column:name"`
-	Gender    string     `gorm:"column:gender"`
-	Challenge string     `gorm:"column:challenge"`
-	Category  string     `gorm:"column:category"`
-	BibNumber string     `gorm:"column:bib_number"`
-	Member1   TeamMember `gorm:"embedded;embedded_prefix:member1_"`
-	Member2   TeamMember `gorm:"embedded;embedded_prefix:member2_"`
-	RaceID    int        `gorm:"column:race_id"`
-	Laps      []Lap      `gorm:"foreignkey:TeamID"`
+	ID          int        `gorm:"primary_key;column:team_id"`
+	Name        string     `gorm:"column:name"`
+	Gender      string     `gorm:"column:gender"`
+	Challenge   string     `gorm:"column:challenge"`
+	AgeCategory string     `gorm:"column:age_category"`
+	BibNumber   int        `gorm:"column:bib_number"`
+	Member1     TeamMember `gorm:"embedded;embedded_prefix:member1_"`
+	Member2     TeamMember `gorm:"embedded;embedded_prefix:member2_"`
+	RaceID      int        `gorm:"column:race_id"`
+	Laps        []Lap      `gorm:"foreignkey:TeamID"`
 }
 
 // TeamMember a member of a team
 type TeamMember struct {
-	FirstName   string `gorm:"column:first_name"`
-	LastName    string
-	DateOfBirth time.Time
-	Gender      string
+	FirstName   string    `gorm:"column:first_name"`
+	LastName    string    `gorm:"column:last_name"`
+	DateOfBirth time.Time `gorm:"column:date_of_birth"`
+	AgeCategory string    `gorm:"column:age_category"`
+	Gender      string    `gorm:"column:gender"`
+	Club        string    `gorm:"column:club"`
 }
 
 const (
@@ -56,8 +58,8 @@ func (t Team) Equal(o Equaler) bool {
 type TeamRepository interface {
 	Create(team *Team) error
 	List(raceID int) ([]Team, error)
-	FindIDByBibNumber(raceID int, bibnumber string) (int, error)
-	LoadByBibNumber(raceID int, bibnumber string) (Team, error)
+	FindIDByBibNumber(raceID int, bibnumber int) (int, error)
+	LoadByBibNumber(raceID int, bibnumber int) (Team, error)
 }
 
 // NewTeamRepository creates a new GormTeamRepository
@@ -79,8 +81,8 @@ func (r *GormTeamRepository) Create(team *Team) error {
 	if team == nil {
 		return errors.New("missing team to persist")
 	}
-	if team.BibNumber == "" {
-		return errors.New("missing 'BibNumber' field")
+	if team.BibNumber <= 0 {
+		return errors.Errorf("missing or invalid 'BibNumber': %d", team.BibNumber)
 	}
 	if team.RaceID == 0 {
 		return errors.New("missing 'RaceID' field")
@@ -106,19 +108,19 @@ func (r *GormTeamRepository) List(raceID int) ([]Team, error) {
 }
 
 // FindIDByBibNumber finds the team's ID from the given bibnumber in the given race
-func (r *GormTeamRepository) FindIDByBibNumber(raceID int, bibnumber string) (int, error) {
+func (r *GormTeamRepository) FindIDByBibNumber(raceID int, bibnumber int) (int, error) {
 	var team Team
 	err := r.db.Raw(
 		fmt.Sprintf("select team_id from %s where race_id = ? and bib_number = ?", team.TableName()),
 		raceID, bibnumber).Scan(&team).Error
 	if err != nil {
-		return -1, errors.Wrapf(err, "fail to find team with bibnumber '%s' in race with id='%d'", bibnumber, raceID)
+		return -1, errors.Wrapf(err, "fail to find team with bibnumber '%d' in race with id='%d'", bibnumber, raceID)
 	}
 	return team.ID, nil
 }
 
 // LoadByBibNumber loads the team along with its laps from the given bibnumber in the given race
-func (r *GormTeamRepository) LoadByBibNumber(raceID int, bibnumber string) (Team, error) {
+func (r *GormTeamRepository) LoadByBibNumber(raceID int, bibnumber int) (Team, error) {
 	result := Team{}
 	db := r.db.Preload("Laps").Where("race_id = ? and bib_number = ?", raceID, bibnumber).First(&result)
 	if err := db.Error; err != nil {
