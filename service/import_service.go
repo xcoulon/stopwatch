@@ -5,9 +5,7 @@ import (
 	"io"
 	"math"
 	"os"
-	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -109,9 +107,10 @@ func (s *ImportService) ImportFromFile(filename string) error {
 }
 
 func genderFrom(teamMember1, teamMember2 model.TeamMember) string {
-	genders := []string{teamMember1.Gender, teamMember2.Gender}
-	sort.Strings(genders)
-	return strings.Join(genders, "")
+	if teamMember1.Gender == teamMember2.Gender {
+		return teamMember1.Gender
+	}
+	return "M"
 }
 
 func newTeamMember(record []string) (model.TeamMember, error) {

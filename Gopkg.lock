@@ -194,17 +194,6 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:1dd43fd9b0c7f593e82e69bd73e7c95dd582c8560b94a424e49769565161083d"
-  name = "github.com/signintech/gopdf"
-  packages = [
-    ".",
-    "fontmaker/core",
-  ]
-  pruneopts = "UT"
-  revision = "a56e85f0b4e2b9fcb9920620a97a97467c383b33"
-  version = "v0.8.3"
-
-[[projects]]
   digest = "1:69b1cc331fca23d702bd72f860c6a647afd0aa9fcbc1d0659b1365e26546dd70"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
@@ -341,7 +330,6 @@
     "github.com/pilu/fresh",
     "github.com/pkg/errors",
     "github.com/satori/go.uuid",
-    "github.com/signintech/gopdf",
     "github.com/sirupsen/logrus",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",

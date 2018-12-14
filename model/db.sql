@@ -15,7 +15,7 @@ CREATE TABLE team (
     race_id int NOT NULL,
     bib_number int NOT NULL CHECK (bib_number > 0),
     name varchar NOT NULL CHECK (name <> ''),
-    gender varchar(2) NOT NULL CHECK (gender <> ''),
+    gender varchar(1) NOT NULL CHECK (gender <> ''),
     challenge varchar NOT NULL CHECK (challenge <> ''),
     age_category varchar NOT NULL CHECK (age_category <> ''),
     member1_first_name varchar NOT NULL CHECK (member1_first_name <> ''),

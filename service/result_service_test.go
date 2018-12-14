@@ -49,13 +49,22 @@ func (s *ResultServiceTestSuite) TestListRacesNoResult() {
 			team.Challenge = "Challenge Entreprise"
 		}
 		if i%2 == 0 {
-			team.Gender = "FF"
+			team.Gender = "F"
+		}
+		if i%3 == 0 {
+			team.Gender = "H"
+		}
+		if i%3 == 0 {
+			team.AgeCategory = service.Veteran
+		}
+		if i%4 == 0 {
+			team.AgeCategory = service.Cadet
 		}
 		if i%5 == 0 {
-			team.Gender = "FH"
+			team.Gender = "M"
 		}
-		if i%10 == 0 {
-			team.Gender = "HF"
+		if i%6 == 0 {
+			team.Challenge = "Challenge Entreprise"
 		}
 
 		err := teamRepo.Create(&team)

@@ -13,7 +13,7 @@ func NewTeam(raceID int, bibnumber int) model.Team {
 		Name:        fmt.Sprintf("team %d", bibnumber),
 		BibNumber:   bibnumber,
 		RaceID:      raceID,
-		Gender:      "HF",
+		Gender:      "M",
 		Challenge:   "open",
 		AgeCategory: "Senior",
 		Member1:     newTeamMember("john", "doe", "H"),

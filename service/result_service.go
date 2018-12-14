@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"encoding/csv"
 	"fmt"
 	"os"
@@ -45,86 +46,91 @@ type teamResult struct {
 	totalTime time.Duration
 }
 
+const (
+	scratchQuery = `select t.bib_number, t.name, t.gender, t.age_category, t.challenge, 
+		member1_last_name, member1_first_name, member1_club, 
+		member2_last_name, member2_first_name, member1_club, 
+		count(l), max(l.time)
+		from team t join lap l on l.team_id = t.team_id 
+		where t.race_id = ? 
+		group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+		order by 12 desc, 13 asc;`
+	entrepriseChallengeQuery = `select t.bib_number, t.name, t.gender, t.age_category, t.challenge, 
+		member1_last_name, member1_first_name, member1_club, 
+		member2_last_name, member2_first_name, member1_club, 
+		count(l), max(l.time)
+		from team t join lap l on l.team_id = t.team_id 
+		where t.race_id = ? and t.challenge = 'Challenge Entreprise'
+		group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+		order by 12 desc, 13 asc;`
+	byGenderAndAgeQuery = `select t.bib_number, t.name, t.gender, t.age_category, t.challenge, 
+		member1_last_name, member1_first_name, member1_club, 
+		member2_last_name, member2_first_name, member1_club, 
+		count(l), max(l.time)
+		from team t join lap l on l.team_id = t.team_id 
+		where t.race_id = ? and t.age_category = ? and t.gender = ?
+		group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+		order by 12 desc, 13 asc;`
+)
+
 // GenerateResults imports the data from the given file
 func (s *ResultService) GenerateResults(raceID int, outputDir string) error {
 	race, err := s.raceRepo.Lookup(raceID)
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
+	var rows *sql.Rows
 	// scratch
-	results := []teamResult{}
-	rows, err := s.baseService.db.Raw(
-		`select t.bib_number, t.name, t.gender, t.age_category, t.challenge, 
-			member1_last_name, member1_first_name, member1_club, 
-			member2_last_name, member2_first_name, member1_club, 
-			count(l), max(l.time)
-			from team t join lap l on l.team_id = t.team_id 
-			where t.race_id = ? 
-			group by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-			order by 12 desc, 13 asc;`, race.ID).Rows()
+	rows, err = s.baseService.db.Raw(scratchQuery, race.ID).Rows()
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var bibNumber int
-		var name string
-		var gender string
-		var ageCategory string
-		var challenge string
-		var member1LastName string
-		var member1FirstName string
-		var member1Club string
-		var member2LastName string
-		var member2FirstName string
-		var member2Club string
-		var laps int
-		var endTime time.Time
-		err := rows.Scan(&bibNumber, &name, &gender, &ageCategory, &challenge, &member1LastName,
-			&member1FirstName, &member1Club, &member2LastName, &member2FirstName, &member1Club,
-			&laps, &endTime)
-		if err != nil {
-			return errors.Wrap(err, "unable to generate results")
-		}
-
-		result := teamResult{
-			name:      name,
-			category:  getCategory(ageCategory, gender),
-			member1:   getMemberName(member1FirstName, member1LastName),
-			member2:   getMemberName(member2FirstName, member2LastName),
-			club:      getMemberClubs(member1Club, member2Club),
-			laps:      laps,
-			totalTime: endTime.Sub(race.StartTime),
-		}
-		logrus.WithField("name", result.name).WithField("laps", result.laps).WithField("total_time", result.totalTime).Info("adding team to result")
-		results = append(results, result)
+	err = generateCSV(outputDir, "scratch", race, rows)
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results")
 	}
 
-	return generateCSV(outputDir, race, results)
-}
-
-func getCategory(ageCategory, gender string) string {
-	switch gender {
-	case "HH":
-		return fmt.Sprintf("%s %s", ageCategory, "H")
-	case "FF":
-		return fmt.Sprintf("%s %s", ageCategory, "F")
-	case "HF", "FH":
-		return fmt.Sprintf("%s %s", ageCategory, "Mixte")
+	// challenge entreprises
+	rows, err = s.baseService.db.Raw(entrepriseChallengeQuery, race.ID).Rows()
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results")
 	}
-	return ""
+	err = generateCSV(outputDir, "challenge-entreprise", race, rows)
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results")
+	}
+
+	// by age and gender
+	ageCategories := []string{Poussin, Pupille, Benjamin, Minime, Cadet, Junior, Senior, Veteran}
+	genders := []string{"H", "F", "M"}
+	for _, ageCategory := range ageCategories {
+		for _, gender := range genders {
+			rows, err = s.baseService.db.Raw(byGenderAndAgeQuery, race.ID, ageCategory, gender).Rows()
+			if err != nil {
+				return errors.Wrap(err, "unable to generate results")
+			}
+			err = generateCSV(outputDir, fmt.Sprintf("%s-%s", ageCategory, gender), race, rows)
+			if err != nil {
+				return errors.Wrap(err, "unable to generate results")
+			}
+		}
+	}
+
+	return nil
 }
 
-func getMemberName(firstName, lastName string) string {
-	return fmt.Sprintf("%s %s", strings.ToTitle(firstName), strings.ToTitle(lastName))
-}
+func generateCSV(outputDir string, resultType string, race model.Race, rows *sql.Rows) error {
+	results, err := readRows(race, rows)
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results")
+	}
 
-func getMemberClubs(member1Club, member2Club string) string {
-	return strings.TrimSpace(fmt.Sprintf("%s %s", member1Club, member2Club))
-}
+	if len(results) == 0 {
+		logrus.WithField("race_name", race.Name).WithField("result_category", resultType).Warn("skipping CSV generation: no result in this category for this race")
+		return nil
+	}
 
-func generateCSV(outputDir string, race model.Race, results []teamResult) error {
-	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s.csv", race.Name)))
+	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.csv", race.Name, resultType)))
 	if err != nil {
 		return errors.Wrap(err, "unable to generate csv")
 	}
@@ -160,6 +166,64 @@ func generateCSV(outputDir string, race model.Race, results []teamResult) error 
 		}
 	}
 	return nil
+}
+
+func readRows(race model.Race, rows *sql.Rows) ([]teamResult, error) {
+	defer rows.Close()
+	results := []teamResult{}
+	for rows.Next() {
+		var bibNumber int
+		var name string
+		var gender string
+		var ageCategory string
+		var challenge string
+		var member1LastName string
+		var member1FirstName string
+		var member1Club string
+		var member2LastName string
+		var member2FirstName string
+		var member2Club string
+		var laps int
+		var endTime time.Time
+		err := rows.Scan(&bibNumber, &name, &gender, &ageCategory, &challenge, &member1LastName,
+			&member1FirstName, &member1Club, &member2LastName, &member2FirstName, &member1Club,
+			&laps, &endTime)
+		if err != nil {
+			return results, errors.Wrap(err, "unable to generate results")
+		}
+
+		result := teamResult{
+			name:      name,
+			category:  gender, // getCategory(ageCategory, gender),
+			member1:   getMemberName(member1FirstName, member1LastName),
+			member2:   getMemberName(member2FirstName, member2LastName),
+			club:      getMemberClubs(member1Club, member2Club),
+			laps:      laps,
+			totalTime: endTime.Sub(race.StartTime),
+		}
+		logrus.WithField("name", result.name).WithField("laps", result.laps).WithField("total_time", result.totalTime).Info("adding team to result")
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+func getCategory(ageCategory, gender string) string {
+	switch gender {
+	case "H":
+		return "Hommes"
+	case "F":
+		return "Femmes"
+	}
+	return "Mixte"
+}
+
+func getMemberName(firstName, lastName string) string {
+	return fmt.Sprintf("%s %s", strings.ToTitle(firstName), strings.ToTitle(lastName))
+}
+
+func getMemberClubs(member1Club, member2Club string) string {
+	return strings.TrimSpace(fmt.Sprintf("%s %s", member1Club, member2Club))
 }
 
 // const (
