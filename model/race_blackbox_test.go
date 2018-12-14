@@ -55,108 +55,66 @@ func (s *RaceRepositoryTestSuite) TestCreateRace() {
 
 }
 
-func (s *RaceRepositoryTestSuite) TestStartRace() {
-	// given
-	raceRepo := model.NewRaceRepository(s.DB)
+// func (s *RaceRepositoryTestSuite) TestEndRace() {
+// 	// given
+// 	raceRepo := model.NewRaceRepository(s.DB)
 
-	s.T().Run("ok", func(t *testing.T) {
-		// given
-		race := model.Race{
-			Name: fmt.Sprintf("race %s", uuid.NewV4()),
-		}
-		err := raceRepo.Create(&race)
-		require.NoError(t, err)
-		// when
-		err = raceRepo.Start(&race)
-		// then
-		require.NoError(t, err)
-		require.True(t, race.IsStarted())
-		// verify the start time
-		result, err := raceRepo.FindByName(race.Name)
-		require.NoError(s.T(), err)
-		assert.False(s.T(), result.StartTime.IsZero())
-		assert.True(s.T(), result.EndTime.IsZero())
-	})
+// 	s.T().Run("ok", func(t *testing.T) {
+// 		// given
+// 		race := model.Race{
+// 			Name: fmt.Sprintf("race %s", uuid.NewV4()),
+// 		}
+// 		err := raceRepo.Create(&race)
+// 		require.NoError(t, err)
+// 		err = raceRepo.Start(&race)
+// 		require.NoError(t, err)
+// 		// when
+// 		err = raceRepo.End(&race)
+// 		// then
+// 		require.NoError(t, err)
+// 		require.True(t, race.IsEnded())
+// 		// verify the end time
+// 		result, err := raceRepo.FindByName(race.Name)
+// 		require.NoError(s.T(), err)
+// 		assert.False(s.T(), result.StartTime.IsZero())
+// 		assert.False(s.T(), result.EndTime.IsZero())
+// 	})
 
-	s.T().Run("failure", func(t *testing.T) {
+// 	s.T().Run("failure", func(t *testing.T) {
 
-		t.Run("already started", func(t *testing.T) {
-			// given
-			race := model.Race{
-				Name: fmt.Sprintf("race %s", uuid.NewV4()),
-			}
-			err := raceRepo.Create(&race)
-			require.NoError(t, err)
-			err = raceRepo.Start(&race)
-			require.NoError(t, err)
-			// when
-			err = raceRepo.Start(&race)
-			// then
-			require.Error(t, err)
-		})
-	})
-}
+// 		t.Run("not started yet", func(t *testing.T) {
+// 			// given
+// 			race := model.Race{
+// 				Name: fmt.Sprintf("race %s", uuid.NewV4()),
+// 			}
+// 			err := raceRepo.Create(&race)
+// 			require.NoError(t, err)
+// 			err = raceRepo.Start(&race)
+// 			require.NoError(t, err)
+// 			// when
+// 			err = raceRepo.Start(&race)
+// 			// then
+// 			require.Error(t, err)
+// 		})
 
-func (s *RaceRepositoryTestSuite) TestEndRace() {
-	// given
-	raceRepo := model.NewRaceRepository(s.DB)
-
-	s.T().Run("ok", func(t *testing.T) {
-		// given
-		race := model.Race{
-			Name: fmt.Sprintf("race %s", uuid.NewV4()),
-		}
-		err := raceRepo.Create(&race)
-		require.NoError(t, err)
-		err = raceRepo.Start(&race)
-		require.NoError(t, err)
-		// when
-		err = raceRepo.End(&race)
-		// then
-		require.NoError(t, err)
-		require.True(t, race.IsEnded())
-		// verify the end time
-		result, err := raceRepo.FindByName(race.Name)
-		require.NoError(s.T(), err)
-		assert.False(s.T(), result.StartTime.IsZero())
-		assert.False(s.T(), result.EndTime.IsZero())
-	})
-
-	s.T().Run("failure", func(t *testing.T) {
-
-		t.Run("not started yet", func(t *testing.T) {
-			// given
-			race := model.Race{
-				Name: fmt.Sprintf("race %s", uuid.NewV4()),
-			}
-			err := raceRepo.Create(&race)
-			require.NoError(t, err)
-			err = raceRepo.Start(&race)
-			require.NoError(t, err)
-			// when
-			err = raceRepo.Start(&race)
-			// then
-			require.Error(t, err)
-		})
-
-		t.Run("already ended", func(t *testing.T) {
-			// given
-			race := model.Race{
-				Name: fmt.Sprintf("race %s", uuid.NewV4()),
-			}
-			err := raceRepo.Create(&race)
-			require.NoError(t, err)
-			err = raceRepo.Start(&race)
-			require.NoError(t, err)
-			err = raceRepo.End(&race)
-			require.NoError(t, err)
-			// when
-			err = raceRepo.End(&race)
-			// then
-			require.Error(t, err)
-		})
-	})
-}
+// 		t.Run("already ended", func(t *testing.T) {
+// 			// given
+// 			race := model.Race{
+// 				Name: fmt.Sprintf("race %s", uuid.NewV4()),
+// 			}
+// 			err := raceRepo.Create(&race)
+// 			require.NoError(t, err)
+// 			err = raceRepo.Start(&race)
+// 			require.NoError(t, err)
+// 			err = raceRepo.End(&race)
+// 			require.NoError(t, err)
+// 			// when
+// 			err = raceRepo.End(&race)
+// 			// then
+// 			require.Error(t, err)
+// 		})
+// 	})
+// }
 
 func (s *RaceRepositoryTestSuite) TestFindByName() {
 	// given

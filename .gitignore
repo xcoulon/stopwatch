@@ -55,6 +55,9 @@ vendor/
 # exclude tmp directory
 tmp
 
+# exclude fonts
+ttf
+
 # exclude code coverage merged results
 coverage.txt
 .DS_Store

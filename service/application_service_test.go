@@ -16,17 +16,17 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestService(t *testing.T) {
+func TestAppService(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &ServiceTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
+	suite.Run(t, &AppServiceTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
 }
 
-type ServiceTestSuite struct {
+type AppServiceTestSuite struct {
 	testsuite.DBTestSuite
 }
 
-func (s *ServiceTestSuite) TestListRacesNoResult() {
+func (s *AppServiceTestSuite) TestListRacesNoResult() {
 	// given
 	raceRepo := model.NewRaceRepository(s.DB)
 	race1 := model.Race{
@@ -42,7 +42,7 @@ func (s *ServiceTestSuite) TestListRacesNoResult() {
 	assert.Len(s.T(), races, 1)
 }
 
-func (s *ServiceTestSuite) TestListRacesMultipleResults() {
+func (s *AppServiceTestSuite) TestListRacesMultipleResults() {
 	// given
 	raceRepo := model.NewRaceRepository(s.DB)
 	race1 := model.Race{
@@ -62,7 +62,7 @@ func (s *ServiceTestSuite) TestListRacesMultipleResults() {
 	require.NoError(s.T(), err)
 	assert.Len(s.T(), races, 2)
 }
-func (s *ServiceTestSuite) TestGetRace() {
+func (s *AppServiceTestSuite) TestGetRace() {
 
 	s.T().Run("ok", func(t *testing.T) {
 		// given
@@ -91,7 +91,7 @@ func (s *ServiceTestSuite) TestGetRace() {
 
 }
 
-func (s *ServiceTestSuite) TestListTeams() {
+func (s *AppServiceTestSuite) TestListTeams() {
 
 	s.T().Run("ok", func(t *testing.T) {
 		// given
@@ -117,7 +117,7 @@ func (s *ServiceTestSuite) TestListTeams() {
 	})
 }
 
-func (s *ServiceTestSuite) TestAddLap() {
+func (s *AppServiceTestSuite) TestAddLap() {
 
 	// given
 	raceRepo := model.NewRaceRepository(s.DB)
@@ -160,47 +160,45 @@ func (s *ServiceTestSuite) TestAddLap() {
 	})
 }
 
-func (s *ServiceTestSuite) TestGetTeamAgeCategory() {
+func (s *AppServiceTestSuite) TestStartRace() {
+	// given
+	raceRepo := model.NewRaceRepository(s.DB)
+	svc := service.NewApplicationService(s.DB)
 
-	testcases := map[string]struct {
-		category1 string
-		category2 string
-		expected  string
-	}{
-		"Poussin/Poussin": {
-			service.Poussin,
-			service.Poussin,
-			service.Poussin,
-		},
-		"Poussin/Pupille": {
-			service.Poussin,
-			service.Pupille,
-			service.Pupille,
-		},
-		"Benjamin/Minime": {
-			service.Benjamin,
-			service.Minime,
-			service.Minime,
-		},
-		"Senior/Senior": {
-			service.Senior,
-			service.Senior,
-			service.Senior,
-		},
-		"Veteran/Senior": {
-			service.Veteran,
-			service.Senior,
-			service.Senior,
-		},
-	}
-	for testname, testdata := range testcases {
-		s.T().Run(testname, func(t *testing.T) {
+	s.T().Run("ok", func(t *testing.T) {
+		// given
+		race := model.Race{
+			Name: fmt.Sprintf("race %s", uuid.NewV4()),
+		}
+		err := raceRepo.Create(&race)
+		require.NoError(t, err)
+		// when
+		_, err = svc.StartRace(race.ID)
+		// then
+		require.NoError(t, err)
+		// verify the start time
+		result, err := raceRepo.FindByName(race.Name)
+		require.NoError(s.T(), err)
+		require.True(t, result.IsStarted())
+		assert.False(s.T(), result.StartTime.IsZero())
+		assert.True(s.T(), result.EndTime.IsZero())
+	})
+
+	s.T().Run("failure", func(t *testing.T) {
+
+		t.Run("already started", func(t *testing.T) {
+			// given
+			race := model.Race{
+				Name: fmt.Sprintf("race %s", uuid.NewV4()),
+			}
+			err := raceRepo.Create(&race)
+			require.NoError(t, err)
+			_, err = svc.StartRace(race.ID)
+			require.NoError(t, err)
 			// when
-			result := service.GetTeamAgeCategory(testdata.category1, testdata.category2)
+			_, err = svc.StartRace(race.ID)
 			// then
-			assert.Equal(t, testdata.expected, result)
+			require.Error(t, err)
 		})
-
-	}
-
+	})
 }
