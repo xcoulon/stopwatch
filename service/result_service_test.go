@@ -92,7 +92,7 @@ func (s *ResultServiceTestSuite) TestListRacesNoResult() {
 
 	svc := service.NewResultService(s.DB)
 	// when
-	err = svc.GenerateResults(race.ID, "../tmp")
+	err = svc.GenerateResults(race.ID, "../tmp/results")
 	// then
 	require.NoError(s.T(), err)
 

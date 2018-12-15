@@ -49,7 +49,7 @@ func (s *ApplicationService) GetRace(id int) (model.Race, error) {
 }
 
 // StartRace set the current race to the one matching the given name
-func (s *ApplicationService) StartRace(raceID int) (time.Time, error) {
+func (s *ApplicationService) StartRace(raceID int) (model.Race, error) {
 	var race model.Race
 	err := Transactional(s.baseService, func(app Repositories) error {
 		var err error
@@ -64,9 +64,63 @@ func (s *ApplicationService) StartRace(raceID int) (time.Time, error) {
 		return app.Races().Save(&race)
 	})
 	if err != nil {
-		return time.Now(), errors.Wrap(err, "unable to start race")
+		return race, errors.Wrap(err, "unable to start race")
 	}
-	return race.StartTime, nil
+	return race, nil
+}
+
+// TODO: is it usefull? (+needs to be updated to the service code)
+// End marks the given race as ended (now)
+// func (r *GormRaceRepository) End(race *Race) error {
+// 	// check values
+// 	if !race.IsStarted() {
+// 		return errors.New("race has not started yet")
+// 	}
+// 	if race.IsEnded() {
+// 		return errors.Errorf("race already ended at %v", race.EndTime.Format(raceTimeFmt))
+// 	}
+// 	race.EndTime = time.Now()
+// 	db := r.db.Save(race)
+// 	if err := db.Error; err != nil {
+// 		return errors.Wrap(err, "fail to save race in DB")
+// 	}
+// 	return nil
+// }
+
+// AddFirstLapForAll set the current race to the one matching the given name
+func (s *ApplicationService) AddFirstLapForAll(raceID int) (model.Race, error) {
+	var race model.Race
+	err := Transactional(s.baseService, func(app Repositories) error {
+		var err error
+		race, err = app.Races().Lookup(raceID)
+		if err != nil {
+			return err
+		}
+		if !race.AllowsFirstLap || race.HasFirstLap {
+			return errors.New("first lap already recorded")
+		}
+		lapTime := time.Now()
+		teams, err := app.Teams().List(race.ID)
+		if err != nil {
+			return err
+		}
+		for _, team := range teams {
+			err = app.Laps().Create(&model.Lap{
+				RaceID: race.ID,
+				TeamID: team.ID,
+				Time:   lapTime,
+			})
+			if err != nil {
+				return err
+			}
+		}
+		race.HasFirstLap = true
+		return app.Races().Save(&race)
+	})
+	if err != nil {
+		return race, errors.Wrap(err, "unable to record for lap race")
+	}
+	return race, nil
 }
 
 // ListTeams list the teams for the current race.

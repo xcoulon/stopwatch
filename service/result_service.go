@@ -1,6 +1,8 @@
 package service
 
 import (
+	"bytes"
+	"context"
 	"database/sql"
 	"encoding/csv"
 	"fmt"
@@ -9,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bytesparadise/libasciidoc"
+	"github.com/bytesparadise/libasciidoc/pkg/renderer"
 
 	"github.com/vatriathlon/stopwatch/model"
 
@@ -164,6 +169,60 @@ func generateCSV(outputDir string, resultType string, race model.Race, rows *sql
 		if err != nil {
 			return errors.Wrap(err, "unable to generate csv")
 		}
+	}
+	return nil
+}
+
+func generateHTML(outputDir string, resultType string, race model.Race, rows *sql.Rows) error {
+	results, err := readRows(race, rows)
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results")
+	}
+
+	if len(results) == 0 {
+		logrus.WithField("race_name", race.Name).WithField("result_category", resultType).Warn("skipping CSV generation: no result in this category for this race")
+		return nil
+	}
+
+	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.html", race.Name, resultType)))
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results in HTML")
+	}
+	defer file.Close()
+
+	adocBuffer := bytes.NewBuffer(nil)
+	adocBuffer.WriteString(fmt.Sprintf("= Classement %s\n\n", resultType))
+
+	// table header
+	_, err = adocBuffer.WriteString("|===\n")
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results in HTML")
+	}
+	_, err = adocBuffer.WriteString("|Equipe |Catégorie |Coureur 1 |Coureur2 |Club |Nb Tours |Temps Total\n\n")
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results in HTML")
+	}
+
+	// table rows
+	for _, r := range results {
+		_, err := adocBuffer.WriteString(fmt.Sprintf("|%s\n|%s\n|%s\n|%s\n|%s\n|%d\n|%s\n\n",
+			r.name,
+			r.category,
+			r.member1,
+			r.member2,
+			r.club,
+			r.laps,
+			r.totalTime.String()))
+		if err != nil {
+			return errors.Wrap(err, "unable to generate results in HTML")
+		}
+	}
+	// close table
+	_, err = adocBuffer.WriteString("|===\n")
+
+	_, err = libasciidoc.ConvertToHTML(context.Background(), adocBuffer, file, renderer.IncludeHeaderFooter(true))
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results in HTML")
 	}
 	return nil
 }

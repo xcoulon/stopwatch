@@ -10,10 +10,12 @@ import (
 
 // Race a race
 type Race struct {
-	ID        int `gorm:"primary_key;column:race_id"`
-	Name      string
-	StartTime time.Time
-	EndTime   time.Time
+	ID             int       `gorm:"primary_key;column:race_id"`
+	Name           string    `gorm:"column:name"`
+	StartTime      time.Time `gorm:"column:start_time"`
+	EndTime        time.Time `gorm:"column:end_time"`
+	AllowsFirstLap bool      `gorm:"column:allows_first_lap"`
+	HasFirstLap    bool      `gorm:"column:has_first_lap"`
 }
 
 const (
@@ -145,39 +147,6 @@ func (r *GormRaceRepository) Save(race *Race) error {
 	}
 	return nil
 }
-
-// TODO: move this business logic at the service layer and just "db.Save" here.
-// Start marks the given race as started (now)
-// func (r *GormRaceRepository) Start(race *Race) error {
-// 	// check values
-// 	if race.IsStarted() {
-// 		return errors.Errorf("race already started at %v", race.StartTime.Format(raceTimeFmt))
-// 	}
-// 	race.StartTime = time.Now()
-// 	db := r.db.Save(race)
-// 	if err := db.Error; err != nil {
-// 		return errors.Wrap(err, "fail to save race in DB")
-// 	}
-// 	return nil
-// }
-
-// TODO: is it usefull?
-// End marks the given race as ended (now)
-// func (r *GormRaceRepository) End(race *Race) error {
-// 	// check values
-// 	if !race.IsStarted() {
-// 		return errors.New("race has not started yet")
-// 	}
-// 	if race.IsEnded() {
-// 		return errors.Errorf("race already ended at %v", race.EndTime.Format(raceTimeFmt))
-// 	}
-// 	race.EndTime = time.Now()
-// 	db := r.db.Save(race)
-// 	if err := db.Error; err != nil {
-// 		return errors.Wrap(err, "fail to save race in DB")
-// 	}
-// 	return nil
-// }
 
 // List lists all races
 func (r *GormRaceRepository) List() ([]Race, error) {

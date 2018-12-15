@@ -41,6 +41,7 @@ func New(svc service.ApplicationService) *echo.Echo {
 	e.GET(ShowRacePathTmpl, ShowRace(svc))
 	e.PATCH(StartRacePathTmpl, StartRace(svc))
 	e.GET(ListTeamsPathTmpl, ListTeams(svc))
+	e.POST(AddFirstLapForAllTmpl, AddFirstLapForAll(svc))
 	e.POST(AddLapPathTmpl, AddLap(svc))
 	return e
 }
@@ -52,6 +53,8 @@ const (
 	StartRacePathTmpl = "/api/races/:raceID"
 	// ListTeamsPathTmpl the path template to list all teams in a race
 	ListTeamsPathTmpl = "/api/races/:raceID/teams"
+	// AddFirstLapForAllTmpl the path template for add a lap to all teams in a race
+	AddFirstLapForAllTmpl = "/api/races/:raceID/firstlap"
 	// AddLapPathTmpl the path template for add a lap to a team in a race
 	AddLapPathTmpl = "/api/races/:raceID/bibnumber/:bibnumber/laps"
 )
@@ -85,7 +88,7 @@ func StartRace(svc service.ApplicationService) echo.HandlerFunc {
 		scheme := c.Scheme()
 		host := c.Request().Host
 		logrus.Debugf("Processing incoming request on %s://%s%s", scheme, host, c.Request().URL)
-		_, err := strconv.Atoi(c.Param("raceID"))
+		raceID, err := strconv.Atoi(c.Param("raceID"))
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("unable to convert race id '%s' to integer", c.Param("raceID")))
 		}
@@ -95,11 +98,11 @@ func StartRace(svc service.ApplicationService) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		logrus.Infof("race patch payload: %v", payload)
-		// race, err := svc.StartRace(raceID)
-		// if err != nil {
-		// 	return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		// }
-		return c.NoContent(204)
+		race, err := svc.StartRace(raceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, race)
 	}
 }
 
@@ -132,6 +135,24 @@ func ListTeams(svc service.ApplicationService) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		return c.JSON(http.StatusOK, teams)
+	}
+}
+
+// AddFirstLapForAll returns a handler to record the first lap for all teams at once
+func AddFirstLapForAll(svc service.ApplicationService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		scheme := c.Scheme()
+		host := c.Request().Host
+		logrus.Debugf("Processing incoming request on %s://%s%s", scheme, host, c.Request().URL)
+		raceID, err := strconv.Atoi(c.Param("raceID"))
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("unable to convert race id '%s' to integer", c.Param("raceID")))
+		}
+		race, err := svc.AddFirstLapForAll(raceID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusCreated, race)
 	}
 }
 

@@ -2,6 +2,20 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:3298ac13af474d157506d78c8ed7d071e8603e9154c84a4049e1c274bae407e3"
+  name = "github.com/bytesparadise/libasciidoc"
+  packages = [
+    ".",
+    "pkg/parser",
+    "pkg/renderer",
+    "pkg/renderer/html5",
+    "pkg/types",
+  ]
+  pruneopts = "UT"
+  revision = "0141d08f0f4661750765d4e9c26e06f7a02bdb9b"
+
+[[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -323,6 +337,8 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/bytesparadise/libasciidoc",
+    "github.com/bytesparadise/libasciidoc/pkg/renderer",
     "github.com/jinzhu/gorm",
     "github.com/labstack/echo",
     "github.com/labstack/echo/middleware",

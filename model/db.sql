@@ -3,7 +3,9 @@ CREATE TABLE race (
     race_id serial primary key,
     name varchar NOT NULL CHECK (name <> ''),
     start_time timestamp,
-    end_time timestamp
+    end_time timestamp,
+    allows_first_lap boolean default false,
+    has_first_lap boolean default false
 );
 
 -- index to query event type by name, which must be unique
@@ -16,7 +18,7 @@ CREATE TABLE team (
     bib_number int NOT NULL CHECK (bib_number > 0),
     name varchar NOT NULL CHECK (name <> ''),
     gender varchar(1) NOT NULL CHECK (gender <> ''),
-    challenge varchar NOT NULL CHECK (challenge <> ''),
+    challenge varchar NOT NULL,
     age_category varchar NOT NULL CHECK (age_category <> ''),
     member1_first_name varchar NOT NULL CHECK (member1_first_name <> ''),
     member1_last_name varchar NOT NULL CHECK (member1_last_name <> ''),
@@ -50,6 +52,6 @@ ALTER TABLE team add constraint lap_race_fk foreign key (race_id) REFERENCES rac
 ALTER TABLE team add constraint lap_team_fk foreign key (team_id) REFERENCES team (team_id);
 
 -- sample data
-insert into race(race_id, name) values (1, 'Bike & Run XS');
+insert into race(race_id, name, allows_first_lap) values (1, 'Bike & Run XS', true);
 insert into race(race_id, name) values (2, 'Bike & Run Jeunes 10-13');
 insert into race(race_id, name) values (3, 'Bike & Run Jeunes 6-9');

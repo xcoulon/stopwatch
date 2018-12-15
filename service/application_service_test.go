@@ -117,6 +117,49 @@ func (s *AppServiceTestSuite) TestListTeams() {
 	})
 }
 
+func (s *AppServiceTestSuite) TestStartRace() {
+	// given
+	raceRepo := model.NewRaceRepository(s.DB)
+	svc := service.NewApplicationService(s.DB)
+
+	s.T().Run("ok", func(t *testing.T) {
+		// given
+		race := model.Race{
+			Name: fmt.Sprintf("race %s", uuid.NewV4()),
+		}
+		err := raceRepo.Create(&race)
+		require.NoError(t, err)
+		// when
+		_, err = svc.StartRace(race.ID)
+		// then
+		require.NoError(t, err)
+		// verify the start time
+		result, err := raceRepo.FindByName(race.Name)
+		require.NoError(s.T(), err)
+		require.True(t, result.IsStarted())
+		assert.False(s.T(), result.StartTime.IsZero())
+		assert.True(s.T(), result.EndTime.IsZero())
+	})
+
+	s.T().Run("failure", func(t *testing.T) {
+
+		t.Run("already started", func(t *testing.T) {
+			// given
+			race := model.Race{
+				Name: fmt.Sprintf("race %s", uuid.NewV4()),
+			}
+			err := raceRepo.Create(&race)
+			require.NoError(t, err)
+			_, err = svc.StartRace(race.ID)
+			require.NoError(t, err)
+			// when
+			_, err = svc.StartRace(race.ID)
+			// then
+			require.Error(t, err)
+		})
+	})
+}
+
 func (s *AppServiceTestSuite) TestAddLap() {
 
 	// given
@@ -159,46 +202,66 @@ func (s *AppServiceTestSuite) TestAddLap() {
 		})
 	})
 }
+func (s *AppServiceTestSuite) TestFirstAddLapForAll() {
 
-func (s *AppServiceTestSuite) TestStartRace() {
-	// given
-	raceRepo := model.NewRaceRepository(s.DB)
-	svc := service.NewApplicationService(s.DB)
-
-	s.T().Run("ok", func(t *testing.T) {
+	s.T().Run("enabled", func(t *testing.T) {
 		// given
+		raceRepo := model.NewRaceRepository(s.DB)
 		race := model.Race{
-			Name: fmt.Sprintf("race %s", uuid.NewV4()),
+			Name:           fmt.Sprintf("race %s", uuid.NewV4()),
+			AllowsFirstLap: true,
+			HasFirstLap:    false,
 		}
 		err := raceRepo.Create(&race)
 		require.NoError(t, err)
-		// when
-		_, err = svc.StartRace(race.ID)
-		// then
-		require.NoError(t, err)
-		// verify the start time
-		result, err := raceRepo.FindByName(race.Name)
-		require.NoError(s.T(), err)
-		require.True(t, result.IsStarted())
-		assert.False(s.T(), result.StartTime.IsZero())
-		assert.True(s.T(), result.EndTime.IsZero())
-	})
-
-	s.T().Run("failure", func(t *testing.T) {
-
-		t.Run("already started", func(t *testing.T) {
-			// given
-			race := model.Race{
-				Name: fmt.Sprintf("race %s", uuid.NewV4()),
-			}
-			err := raceRepo.Create(&race)
+		svc := service.NewApplicationService(s.DB)
+		teamRepo := model.NewTeamRepository(s.DB)
+		teams := []model.Team{}
+		for i := 1; i < 6; i++ {
+			team := testmodel.NewTeam(race.ID, i)
+			err := teamRepo.Create(&team)
 			require.NoError(t, err)
-			_, err = svc.StartRace(race.ID)
-			require.NoError(t, err)
+			teams = append(teams, team)
+		}
+
+		t.Run("can add first lap", func(t *testing.T) {
 			// when
-			_, err = svc.StartRace(race.ID)
+			race, err := svc.AddFirstLapForAll(race.ID)
+			// then
+			require.NoError(t, err)
+			assert.True(t, race.AllowsFirstLap)
+			assert.True(t, race.HasFirstLap)
+			// check that all teams have a lap
+			teams, err := teamRepo.List(race.ID)
+			require.NoError(t, err)
+			for _, team := range teams {
+				assert.NotEmpty(t, team.Laps)
+			}
+		})
+
+		s.T().Run("cannot add first lap again", func(t *testing.T) {
+			// when
+			_, err := svc.AddFirstLapForAll(race.ID)
 			// then
 			require.Error(t, err)
 		})
 	})
+
+	s.T().Run("disabled", func(t *testing.T) {
+		// given
+		raceRepo := model.NewRaceRepository(s.DB)
+		race := model.Race{
+			Name:           fmt.Sprintf("race %s", uuid.NewV4()),
+			AllowsFirstLap: false,
+			HasFirstLap:    false,
+		}
+		err := raceRepo.Create(&race)
+		require.NoError(t, err)
+		svc := service.NewApplicationService(s.DB)
+		// when
+		_, err = svc.AddFirstLapForAll(race.ID)
+		// then
+		require.Error(t, err)
+	})
+
 }
