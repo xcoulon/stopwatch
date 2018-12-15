@@ -85,7 +85,7 @@ func (s *ResultService) GenerateResults(raceID int, outputDir string) error {
 		return errors.Wrap(err, "unable to generate results")
 	}
 	defer scratchRows.Close()
-	err = generateAsciidoc(outputDir, "scratch", race, scratchRows)
+	err = generateAsciidoc(outputDir, race, scratchRows, "Scratch", "", true)
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
@@ -96,7 +96,7 @@ func (s *ResultService) GenerateResults(raceID int, outputDir string) error {
 		return errors.Wrap(err, "unable to generate results")
 	}
 	defer challengeRows.Close()
-	err = generateAsciidoc(outputDir, "challenge-entreprise", race, challengeRows)
+	err = generateAsciidoc(outputDir, race, challengeRows, "Challenge Entreprise", "", true)
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
@@ -111,7 +111,7 @@ func (s *ResultService) GenerateResults(raceID int, outputDir string) error {
 			if err != nil {
 				return errors.Wrap(err, "unable to generate results")
 			}
-			err = generateAsciidoc(outputDir, fmt.Sprintf("%s-%s", ageCategory, gender), race, categoryRows)
+			err = generateAsciidoc(outputDir, race, categoryRows, ageCategory, gender, false)
 			if err != nil {
 				return errors.Wrap(err, "unable to generate results")
 			}
@@ -168,69 +168,82 @@ func generateCSV(outputDir string, resultType string, race model.Race, rows *sql
 	return nil
 }
 
-func generateAsciidoc(outputDir string, resultType string, race model.Race, rows *sql.Rows) error {
+func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, cat2 string, includeAgeGender bool) error {
 	results, err := readRows(race, rows)
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
 	if len(results) == 0 {
 		logrus.WithField("race_name", race.Name).
-			WithField("result_category", resultType).
+			WithField("result_category", fmt.Sprintf("%s-%s", cat1, cat2)).
 			Warn("skipping: no result in this category for this race")
 		return nil
 	}
-	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.adoc", strings.Replace(race.Name, " ", "-", -1), resultType)))
+	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.adoc", strings.Replace(race.Name, " ", "-", -1), fmt.Sprintf("%s-%s", cat1, cat2))))
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results in asciidoc")
 	}
 	defer file.Close()
 
 	logrus.WithField("race_name", race.Name).
-		WithField("result_category", resultType).
+		WithField("result_category", fmt.Sprintf("%s-%s", cat1, cat2)).
 		WithField("teams", len(results)).
 		Info("generating results...")
 
 	adocWriter := bufio.NewWriter(file)
-	adocWriter.WriteString(fmt.Sprintf("= Classement %s\n\n", resultType))
-	adocWriter.WriteString(fmt.Sprintf("== Classement %s\n\n", resultType))
+	adocWriter.WriteString(fmt.Sprintf("= Classement %s\n\n", label(cat1, cat2)))
+	adocWriter.WriteString(fmt.Sprintf("== Classement %s\n\n", label(cat1, cat2)))
 	// table header
-	_, err = adocWriter.WriteString("[cols=\"2,5,5,8,8,3,4\"]\n")
-	if err != nil {
-		return errors.Wrap(err, "unable to generate results in asciidoc")
+	adocWriter.WriteString("[cols=\"2,5,")
+	if includeAgeGender {
+		adocWriter.WriteString("5,")
 	}
-	_, err = adocWriter.WriteString("|===\n")
-	if err != nil {
-		return errors.Wrap(err, "unable to generate results in asciidoc")
+	adocWriter.WriteString("8,8,3,4\"]\n")
+	adocWriter.WriteString("|===\n")
+	adocWriter.WriteString("|# |Equipe ")
+	if includeAgeGender {
+		adocWriter.WriteString("|Catégorie ")
 	}
-	_, err = adocWriter.WriteString("|# |Equipe |Catégorie |Coureurs |Club |Tours |Temps Total\n\n")
-	if err != nil {
-		return errors.Wrap(err, "unable to generate results in asciidoc")
-	}
+	adocWriter.WriteString("|Coureurs |Club |Tours |Temps Total\n\n")
 
 	// table rows
 	for i, r := range results {
-		_, err := adocWriter.WriteString(fmt.Sprintf("|%d |%s |%s |%s |%s |%d |%s \n",
+		adocWriter.WriteString(fmt.Sprintf("|%d |%s ",
 			i+1,
-			r.name,
-			r.category,
+			r.name))
+		if includeAgeGender {
+			adocWriter.WriteString(fmt.Sprintf("|%s ",
+				r.category))
+		}
+		adocWriter.WriteString(fmt.Sprintf("|%s |%s |%d |%s \n",
 			r.members,
 			r.club,
 			r.laps,
 			r.totalTime.String()))
-		if err != nil {
-			return errors.Wrap(err, "unable to generate results in asciidoc")
-		}
 	}
 	// close table
-	_, err = adocWriter.WriteString("|===\n")
-	if err != nil {
-		return errors.Wrap(err, "unable to generate results in asciidoc")
-	}
+	adocWriter.WriteString("|===\n")
 	err = adocWriter.Flush()
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results in asciidoc")
 	}
 	return nil
+}
+
+func label(cat1, cat2 string) string {
+	// "Scratch" and "Challenge Entreprise"
+	if cat2 == "" {
+		return cat1
+	}
+	// other: age / gender
+	switch cat2 {
+	case "M":
+		return fmt.Sprintf("%ss / Mixte", cat1)
+	case "F":
+		return fmt.Sprintf("%ss / Femmes", cat1)
+	default:
+		return fmt.Sprintf("%ss / Hommes", cat1)
+	}
 }
 
 func readRows(race model.Race, rows *sql.Rows) ([]teamResult, error) {
@@ -274,8 +287,8 @@ func readRows(race model.Race, rows *sql.Rows) ([]teamResult, error) {
 	return results, nil
 }
 
-func getCategory(ageCategoy, gender string) string {
-	return fmt.Sprintf("%s/%s", ageCategoy, gender)
+func getCategory(ageCategory, gender string) string {
+	return fmt.Sprintf("%s/%s", string([]rune(ageCategory)[0]), string([]rune(gender)[0]))
 }
 
 func getMemberNames(lastName1, lastName2 string) string {
