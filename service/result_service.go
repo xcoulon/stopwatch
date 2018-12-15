@@ -1,8 +1,7 @@
 package service
 
 import (
-	"bytes"
-	"context"
+	"bufio"
 	"database/sql"
 	"encoding/csv"
 	"fmt"
@@ -11,9 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/bytesparadise/libasciidoc"
-	"github.com/bytesparadise/libasciidoc/pkg/renderer"
 
 	"github.com/vatriathlon/stopwatch/model"
 
@@ -44,8 +40,7 @@ type teamResult struct {
 	name      string
 	category  string
 	gender    string
-	member1   string
-	member2   string
+	members   string
 	club      string
 	laps      int
 	totalTime time.Duration
@@ -84,23 +79,24 @@ func (s *ResultService) GenerateResults(raceID int, outputDir string) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
-	var rows *sql.Rows
 	// scratch
-	rows, err = s.baseService.db.Raw(scratchQuery, race.ID).Rows()
+	scratchRows, err := s.baseService.db.Raw(scratchQuery, race.ID).Rows()
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
-	err = generateCSV(outputDir, "scratch", race, rows)
+	defer scratchRows.Close()
+	err = generateAsciidoc(outputDir, "scratch", race, scratchRows)
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
 
 	// challenge entreprises
-	rows, err = s.baseService.db.Raw(entrepriseChallengeQuery, race.ID).Rows()
+	challengeRows, err := s.baseService.db.Raw(entrepriseChallengeQuery, race.ID).Rows()
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
-	err = generateCSV(outputDir, "challenge-entreprise", race, rows)
+	defer challengeRows.Close()
+	err = generateAsciidoc(outputDir, "challenge-entreprise", race, challengeRows)
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
@@ -110,17 +106,17 @@ func (s *ResultService) GenerateResults(raceID int, outputDir string) error {
 	genders := []string{"H", "F", "M"}
 	for _, ageCategory := range ageCategories {
 		for _, gender := range genders {
-			rows, err = s.baseService.db.Raw(byGenderAndAgeQuery, race.ID, ageCategory, gender).Rows()
+			categoryRows, err := s.baseService.db.Raw(byGenderAndAgeQuery, race.ID, ageCategory, gender).Rows()
+			defer categoryRows.Close()
 			if err != nil {
 				return errors.Wrap(err, "unable to generate results")
 			}
-			err = generateCSV(outputDir, fmt.Sprintf("%s-%s", ageCategory, gender), race, rows)
+			err = generateAsciidoc(outputDir, fmt.Sprintf("%s-%s", ageCategory, gender), race, categoryRows)
 			if err != nil {
 				return errors.Wrap(err, "unable to generate results")
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -135,7 +131,7 @@ func generateCSV(outputDir string, resultType string, race model.Race, rows *sql
 		return nil
 	}
 
-	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.csv", race.Name, resultType)))
+	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.csv", strings.Replace(race.Name, " ", "-", -1), resultType)))
 	if err != nil {
 		return errors.Wrap(err, "unable to generate csv")
 	}
@@ -160,8 +156,7 @@ func generateCSV(outputDir string, resultType string, race model.Race, rows *sql
 		err := csvWriter.Write([]string{
 			r.name,
 			r.category,
-			r.member1,
-			r.member2,
+			r.members,
 			r.club,
 			strconv.Itoa(r.laps),
 			r.totalTime.String(),
@@ -173,56 +168,67 @@ func generateCSV(outputDir string, resultType string, race model.Race, rows *sql
 	return nil
 }
 
-func generateHTML(outputDir string, resultType string, race model.Race, rows *sql.Rows) error {
+func generateAsciidoc(outputDir string, resultType string, race model.Race, rows *sql.Rows) error {
 	results, err := readRows(race, rows)
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
-
 	if len(results) == 0 {
-		logrus.WithField("race_name", race.Name).WithField("result_category", resultType).Warn("skipping CSV generation: no result in this category for this race")
+		logrus.WithField("race_name", race.Name).
+			WithField("result_category", resultType).
+			Warn("skipping: no result in this category for this race")
 		return nil
 	}
-
-	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.html", race.Name, resultType)))
+	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.adoc", strings.Replace(race.Name, " ", "-", -1), resultType)))
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results in HTML")
+		return errors.Wrap(err, "unable to generate results in asciidoc")
 	}
 	defer file.Close()
 
-	adocBuffer := bytes.NewBuffer(nil)
-	adocBuffer.WriteString(fmt.Sprintf("= Classement %s\n\n", resultType))
+	logrus.WithField("race_name", race.Name).
+		WithField("result_category", resultType).
+		WithField("teams", len(results)).
+		Info("generating results...")
 
+	adocWriter := bufio.NewWriter(file)
+	adocWriter.WriteString(fmt.Sprintf("= Classement %s\n\n", resultType))
+	adocWriter.WriteString(fmt.Sprintf("== Classement %s\n\n", resultType))
 	// table header
-	_, err = adocBuffer.WriteString("|===\n")
+	_, err = adocWriter.WriteString("[cols=\"2,5,5,8,8,3,4\"]\n")
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results in HTML")
+		return errors.Wrap(err, "unable to generate results in asciidoc")
 	}
-	_, err = adocBuffer.WriteString("|Equipe |Catégorie |Coureur 1 |Coureur2 |Club |Nb Tours |Temps Total\n\n")
+	_, err = adocWriter.WriteString("|===\n")
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results in HTML")
+		return errors.Wrap(err, "unable to generate results in asciidoc")
+	}
+	_, err = adocWriter.WriteString("|# |Equipe |Catégorie |Coureurs |Club |Tours |Temps Total\n\n")
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results in asciidoc")
 	}
 
 	// table rows
-	for _, r := range results {
-		_, err := adocBuffer.WriteString(fmt.Sprintf("|%s\n|%s\n|%s\n|%s\n|%s\n|%d\n|%s\n\n",
+	for i, r := range results {
+		_, err := adocWriter.WriteString(fmt.Sprintf("|%d |%s |%s |%s |%s |%d |%s \n",
+			i+1,
 			r.name,
 			r.category,
-			r.member1,
-			r.member2,
+			r.members,
 			r.club,
 			r.laps,
 			r.totalTime.String()))
 		if err != nil {
-			return errors.Wrap(err, "unable to generate results in HTML")
+			return errors.Wrap(err, "unable to generate results in asciidoc")
 		}
 	}
 	// close table
-	_, err = adocBuffer.WriteString("|===\n")
-
-	_, err = libasciidoc.ConvertToHTML(context.Background(), adocBuffer, file, renderer.IncludeHeaderFooter(true))
+	_, err = adocWriter.WriteString("|===\n")
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results in HTML")
+		return errors.Wrap(err, "unable to generate results in asciidoc")
+	}
+	err = adocWriter.Flush()
+	if err != nil {
+		return errors.Wrap(err, "unable to generate results in asciidoc")
 	}
 	return nil
 }
@@ -253,35 +259,33 @@ func readRows(race model.Race, rows *sql.Rows) ([]teamResult, error) {
 
 		result := teamResult{
 			name:      name,
-			category:  gender, // getCategory(ageCategory, gender),
-			member1:   getMemberName(member1FirstName, member1LastName),
-			member2:   getMemberName(member2FirstName, member2LastName),
+			category:  getCategory(ageCategory, gender),
+			members:   getMemberNames(member1LastName, member2LastName),
 			club:      getMemberClubs(member1Club, member2Club),
 			laps:      laps,
 			totalTime: endTime.Sub(race.StartTime),
 		}
-		logrus.WithField("name", result.name).WithField("laps", result.laps).WithField("total_time", result.totalTime).Info("adding team to result")
+		logrus.WithField("name", result.name).
+			WithField("laps", result.laps).
+			WithField("total_time", result.totalTime).
+			Debug("adding team to result")
 		results = append(results, result)
 	}
-
 	return results, nil
 }
 
-func getCategory(ageCategory, gender string) string {
-	switch gender {
-	case "H":
-		return "Hommes"
-	case "F":
-		return "Femmes"
-	}
-	return "Mixte"
+func getCategory(ageCategoy, gender string) string {
+	return fmt.Sprintf("%s/%s", ageCategoy, gender)
 }
 
-func getMemberName(firstName, lastName string) string {
-	return fmt.Sprintf("%s %s", strings.ToTitle(firstName), strings.ToTitle(lastName))
+func getMemberNames(lastName1, lastName2 string) string {
+	return fmt.Sprintf("%s - %s", lastName1, lastName2)
 }
 
 func getMemberClubs(member1Club, member2Club string) string {
+	if member1Club == member2Club {
+		return member1Club
+	}
 	return strings.TrimSpace(fmt.Sprintf("%s %s", member1Club, member2Club))
 }
 
