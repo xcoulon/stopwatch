@@ -147,21 +147,6 @@ const (
 	Veteran = "Vétéran"
 )
 
-var ageCategories map[string]int
-
-func init() {
-	ageCategories = map[string]int{
-		Poussin:  1,
-		Pupille:  2,
-		Benjamin: 3,
-		Minime:   4,
-		Cadet:    5,
-		Junior:   6,
-		Veteran:  7,
-		Senior:   8,
-	}
-}
-
 // GetAgeCategory gets the age category associated with the given date of birth
 func GetAgeCategory(dateOfBirth time.Time) string {
 	yearOfBirth := dateOfBirth.Year()
@@ -190,10 +175,33 @@ func GetAgeCategory(dateOfBirth time.Time) string {
 	return Veteran
 }
 
+var ageCategories map[string]int
+
+func init() {
+	ageCategories = map[string]int{
+		Poussin:  1,
+		Pupille:  2,
+		Benjamin: 3,
+		Minime:   4,
+		Cadet:    5,
+		Junior:   6,
+		Veteran:  7,
+		Senior:   8,
+	}
+}
+
 // GetTeamAgeCategory computes the age category for the team
 func GetTeamAgeCategory(ageCategory1, ageCategory2 string) string {
-	teamAgeCategoryValue := math.Max(float64(ageCategories[ageCategory1]), float64(ageCategories[ageCategory2]))
+	cat1 := ageCategories[ageCategory1]
+	cat2 := ageCategories[ageCategory2]
+	// assign to senior if 1 veteran + 1 under senior
+	if (ageCategory1 == Veteran && cat2 <= ageCategories[Junior]) || (ageCategory2 == Veteran && cat1 <= ageCategories[Junior]) {
+		return Senior
+	}
+	teamAgeCategoryValue := math.Max(float64(cat1), float64(cat2))
 	logrus.WithField("team_age_category_value", teamAgeCategoryValue).Debugf("computing team age category...")
+	//
+
 	for k, v := range ageCategories {
 		if float64(v) == teamAgeCategoryValue {
 			return k
