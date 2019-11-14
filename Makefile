@@ -93,3 +93,9 @@ lint:
 
 
 PARSER_DIFF_STATUS :=
+
+.PHONY: run
+## run the database and the backend service
+run:
+	$(MAKE) start-database
+	@go run main.go
