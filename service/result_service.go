@@ -37,6 +37,7 @@ func NewResultService(db *gorm.DB) ResultService {
 }
 
 type teamResult struct {
+	bibNumber string
 	name      string
 	category  string
 	gender    string
@@ -140,6 +141,7 @@ func generateCSV(outputDir string, resultType string, race model.Race, rows *sql
 	defer csvWriter.Flush()
 	// headers
 	err = csvWriter.Write([]string{
+		"Dossard",
 		"Equipe",
 		"Catégorie",
 		"Coureur 1",
@@ -155,6 +157,7 @@ func generateCSV(outputDir string, resultType string, race model.Race, rows *sql
 	for _, r := range results {
 		err := csvWriter.Write([]string{
 			r.name,
+			r.bibNumber,
 			r.category,
 			r.members,
 			r.club,
@@ -173,20 +176,26 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results")
 	}
+	var category string
+	if cat2 != "" {
+		category = fmt.Sprintf("%s-%s", cat1, cat2)
+	} else {
+		category = cat1
+	}
 	if len(results) == 0 {
 		logrus.WithField("race_name", race.Name).
-			WithField("result_category", fmt.Sprintf("%s-%s", cat1, cat2)).
+			WithField("result_category", category).
 			Warn("skipping: no result in this category for this race")
 		return nil
 	}
-	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.adoc", strings.Replace(race.Name, " ", "-", -1), fmt.Sprintf("%s-%s", cat1, cat2))))
+	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.adoc", strings.Replace(race.Name, " ", "-", -1), category)))
 	if err != nil {
 		return errors.Wrap(err, "unable to generate results in asciidoc")
 	}
 	defer file.Close()
 
 	logrus.WithField("race_name", race.Name).
-		WithField("result_category", fmt.Sprintf("%s-%s", cat1, cat2)).
+		WithField("result_category", category).
 		WithField("teams", len(results)).
 		Info("generating results...")
 
@@ -194,13 +203,14 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 	adocWriter.WriteString(fmt.Sprintf("= Classement %s\n\n", label(cat1, cat2)))
 	adocWriter.WriteString(fmt.Sprintf("== Classement %s\n\n", label(cat1, cat2)))
 	// table header
-	adocWriter.WriteString("[cols=\"2,5,")
+	adocWriter.WriteString("[cols=\"2,5,5,")
 	if includeAgeGender {
 		adocWriter.WriteString("5,")
 	}
 	adocWriter.WriteString("8,8,3,4\"]\n")
 	adocWriter.WriteString("|===\n")
-	adocWriter.WriteString("|# |Equipe ")
+	adocWriter.WriteString("|# |Dossard ")
+	adocWriter.WriteString("|Equipe ")
 	if includeAgeGender {
 		adocWriter.WriteString("|Catégorie ")
 	}
@@ -208,8 +218,9 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 
 	// table rows
 	for i, r := range results {
-		adocWriter.WriteString(fmt.Sprintf("|%d |%s ",
+		adocWriter.WriteString(fmt.Sprintf("|%d |%s |%s ",
 			i+1,
+			r.bibNumber,
 			r.name))
 		if includeAgeGender {
 			adocWriter.WriteString(fmt.Sprintf("|%s ",
@@ -219,7 +230,7 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 			r.members,
 			r.club,
 			r.laps,
-			r.totalTime.String()))
+			fmtDuration(r.totalTime)))
 	}
 	// close table
 	adocWriter.WriteString("|===\n")
@@ -228,6 +239,16 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 		return errors.Wrap(err, "unable to generate results in asciidoc")
 	}
 	return nil
+}
+
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Second)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	d -= m * time.Minute
+	s := d / time.Second
+	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 }
 
 func label(cat1, cat2 string) string {
@@ -271,12 +292,13 @@ func readRows(race model.Race, rows *sql.Rows) ([]teamResult, error) {
 		}
 
 		result := teamResult{
+			bibNumber: strconv.Itoa(bibNumber),
 			name:      name,
 			category:  getCategory(ageCategory, gender),
 			members:   getMemberNames(member1LastName, member2LastName),
 			club:      getMemberClubs(member1Club, member2Club),
 			laps:      laps,
-			totalTime: endTime.Sub(race.StartTime),
+			totalTime: endTime.Sub(race.StartTime).Round(time.Second),
 		}
 		logrus.WithField("name", result.name).
 			WithField("laps", result.laps).
