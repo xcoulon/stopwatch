@@ -41,11 +41,6 @@ help:/
           } \
         }' $(MAKEFILE_LIST)
 
-.PHONY: deps
-## Download build dependencies.
-deps: 
-	dep ensure -v
-
 $(INSTALL_PREFIX):
 # Build artifacts dir
 	@mkdir -p $(INSTALL_PREFIX)
@@ -56,7 +51,7 @@ prebuild-checks: $(INSTALL_PREFIX)
 
 .PHONY: test
 ## run all tests excluding fixtures and vendored packages
-test: deps 
+test: 
 	STOPWATCH_LOG_LEVEL=info \
 	STOPWATCH_ENABLE_DB_LOGS=false \
 	STOPWATCH_CLEAN_TEST_DATA=true \
@@ -66,7 +61,7 @@ test: deps
 
 .PHONY: build
 ## build the binary executable from CLI
-build: $(INSTALL_PREFIX) deps
+build: $(INSTALL_PREFIX)
 	$(eval BUILD_COMMIT:=$(shell git rev-parse --short HEAD))
 	$(eval BUILD_TAG:=$(shell git tag --contains $(BUILD_COMMIT)))
 	$(eval BUILD_TIME:=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ'))
