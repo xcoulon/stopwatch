@@ -106,7 +106,7 @@ func (c *Configuration) setConfigDefaults() {
 	c.v.SetTypeByDefaultValue(true)
 
 	c.v.SetDefault(varPostgresHost, "localhost")
-	c.v.SetDefault(varPostgresPort, 5439)
+	c.v.SetDefault(varPostgresPort, 5432)
 	c.v.SetDefault(varPostgresDatabase, "postgres")
 	c.v.SetDefault(varPostgresUser, "postgres")
 	c.v.SetDefault(varPostgresPassword, defaultDBPassword)

@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vatriathlon/stopwatch/configuration"
-	"github.com/vatriathlon/stopwatch/model"
-	testmodel "github.com/vatriathlon/stopwatch/test/model"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
+	"github.com/vatriathlon/stopwatch/pkg/configuration"
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	"github.com/vatriathlon/stopwatch/testsupport" 
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,11 +18,11 @@ import (
 func TestTeamRepository(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &TeamRepositoryTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
+	suite.Run(t, &TeamRepositoryTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
 }
 
 type TeamRepositoryTestSuite struct {
-	testsuite.DBTestSuite
+	testsupport.DBTestSuite
 }
 
 func (s *TeamRepositoryTestSuite) TestCreateTeam() {
@@ -40,7 +39,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 	s.T().Run("ok", func(t *testing.T) {
 		// given
-		team := testmodel.NewTeam(race.ID, 1)
+		team := testsupport.NewTeam(race.ID, 1)
 		// when
 		err := teamRepo.Create(&team)
 		// then
@@ -52,7 +51,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 		t.Run("missing name", func(t *testing.T) {
 			// given
-			team := testmodel.NewTeam(race.ID, 1)
+			team := testsupport.NewTeam(race.ID, 1)
 			team.Name = ""
 			// when
 			err := teamRepo.Create(&team)
@@ -62,7 +61,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 		t.Run("missing bib number", func(t *testing.T) {
 			// given
-			team := testmodel.NewTeam(race.ID, 0)
+			team := testsupport.NewTeam(race.ID, 0)
 			// when
 			err := teamRepo.Create(&team)
 			// then
@@ -71,11 +70,11 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 		t.Run("duplicate bib number", func(t *testing.T) {
 			// given
-			team1 := testmodel.NewTeam(race.ID, 2)
+			team1 := testsupport.NewTeam(race.ID, 2)
 			err := teamRepo.Create(&team1)
 			require.NoError(t, err)
 			// when
-			team2 := testmodel.NewTeam(race.ID, 2)
+			team2 := testsupport.NewTeam(race.ID, 2)
 			err = teamRepo.Create(&team2)
 			// then
 			require.Error(t, err)
@@ -83,7 +82,7 @@ func (s *TeamRepositoryTestSuite) TestCreateTeam() {
 
 		t.Run("missing race ID", func(t *testing.T) {
 			// given
-			team := testmodel.NewTeam(race.ID, 1)
+			team := testsupport.NewTeam(race.ID, 1)
 			team.RaceID = 0
 			// when
 			err := teamRepo.Create(&team)
@@ -118,7 +117,7 @@ func (s *TeamRepositoryTestSuite) TestListTeamsSingleResult() {
 	}
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
-	team := testmodel.NewTeam(race.ID, 1)
+	team := testsupport.NewTeam(race.ID, 1)
 	err = teamRepo.Create(&team)
 	require.NoError(s.T(), err)
 	// when
@@ -139,7 +138,7 @@ func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 	}
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
-	team1 := testmodel.NewTeam(race.ID, 2)
+	team1 := testsupport.NewTeam(race.ID, 2)
 	err = teamRepo.Create(&team1)
 	require.NoError(s.T(), err)
 	lap1 := model.Lap{
@@ -149,7 +148,7 @@ func (s *TeamRepositoryTestSuite) TestListTeamsMultipleResults() {
 	}
 	err = lapRepo.Create(&lap1)
 	require.NoError(s.T(), err)
-	team2 := testmodel.NewTeam(race.ID, 1)
+	team2 := testsupport.NewTeam(race.ID, 1)
 	err = teamRepo.Create(&team2)
 	require.NoError(s.T(), err)
 	// when

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vatriathlon/stopwatch/model"
+	"github.com/vatriathlon/stopwatch/pkg/model"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"

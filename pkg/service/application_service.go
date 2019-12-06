@@ -3,9 +3,10 @@ package service
 import (
 	"time"
 
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	"github.com/vatriathlon/stopwatch/model"
 )
 
 // ApplicationService the interface for the application service

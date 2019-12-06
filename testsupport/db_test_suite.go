@@ -1,7 +1,8 @@
-package suite
+package testsupport
 
 import (
 	"context"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq" // need to import postgres driver
@@ -39,12 +40,16 @@ type DBTestSuite struct {
 // SetupSuite implements suite.SetupAllSuite
 func (s *DBTestSuite) SetupSuite() {
 	var err error
-	s.DB, err = gorm.Open("postgres", s.config.GetPostgresConfigString())
-	if err != nil {
-		log.Panic(nil, map[string]interface{}{
+	for {
+		s.DB, err = gorm.Open("postgres", s.config.GetPostgresConfigString())
+		if err == nil {
+			break
+		}
+		log.Warn("failed to connect to the database", map[string]interface{}{
 			"err":             err,
 			"postgres_config": s.config.GetPostgresConfigString(),
-		}, "failed to connect to the database")
+		})
+		time.Sleep(1 * time.Second)
 	}
 	// configures the log mode for the SQL queries (by default, disabled)
 	s.DB.LogMode(s.config.IsDBLogsEnabled())

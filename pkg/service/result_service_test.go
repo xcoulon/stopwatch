@@ -5,26 +5,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vatriathlon/stopwatch/service"
-
-	"github.com/vatriathlon/stopwatch/model"
+	"github.com/vatriathlon/stopwatch/pkg/configuration"
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	"github.com/vatriathlon/stopwatch/pkg/service"
+	"github.com/vatriathlon/stopwatch/testsupport"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"github.com/vatriathlon/stopwatch/configuration"
-	testmodel "github.com/vatriathlon/stopwatch/test/model"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
 )
 
 func TestResultService(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &ResultServiceTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
+	suite.Run(t, &ResultServiceTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
 }
 
 type ResultServiceTestSuite struct {
-	testsuite.DBTestSuite
+	testsupport.DBTestSuite
 }
 
 func (s *ResultServiceTestSuite) TestListRacesNoResult() {
@@ -43,7 +41,7 @@ func (s *ResultServiceTestSuite) TestListRacesNoResult() {
 
 	// 10 teams, 4 laps each
 	for i := 1; i < 120; i++ {
-		team := testmodel.NewTeam(race.ID, i)
+		team := testsupport.NewTeam(race.ID, i)
 		// every 10: 'entreprise' challenge
 		if i%10 == 0 {
 			team.Challenge = "Challenge Entreprise"
@@ -92,7 +90,7 @@ func (s *ResultServiceTestSuite) TestListRacesNoResult() {
 
 	svc := service.NewResultService(s.DB)
 	// when
-	err = svc.GenerateResults(race.ID, "../tmp/results")
+	err = svc.GenerateResults(race.ID, "../../tmp/results")
 	// then
 	require.NoError(s.T(), err)
 

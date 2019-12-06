@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vatriathlon/stopwatch/configuration"
-	"github.com/vatriathlon/stopwatch/model"
-	testmodel "github.com/vatriathlon/stopwatch/test/model"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
+	"github.com/vatriathlon/stopwatch/pkg/configuration"
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	"github.com/vatriathlon/stopwatch/testsupport" 
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,11 +18,11 @@ import (
 func TestLapRepository(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &LapRepositoryTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
+	suite.Run(t, &LapRepositoryTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
 }
 
 type LapRepositoryTestSuite struct {
-	testsuite.DBTestSuite
+	testsupport.DBTestSuite
 }
 
 func (s *LapRepositoryTestSuite) TestCreateLap() {
@@ -37,10 +36,10 @@ func (s *LapRepositoryTestSuite) TestCreateLap() {
 	}
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
-	team1 := testmodel.NewTeam(race.ID, 1)
+	team1 := testsupport.NewTeam(race.ID, 1)
 	err = teamRepo.Create(&team1)
 	require.NoError(s.T(), err)
-	team2 := testmodel.NewTeam(race.ID, 2)
+	team2 := testsupport.NewTeam(race.ID, 2)
 	err = teamRepo.Create(&team2)
 	require.NoError(s.T(), err)
 

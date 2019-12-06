@@ -4,24 +4,24 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/vatriathlon/stopwatch/pkg/configuration"
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	"github.com/vatriathlon/stopwatch/testsupport"
 
 	uuid "github.com/satori/go.uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"github.com/vatriathlon/stopwatch/configuration"
-	"github.com/vatriathlon/stopwatch/model"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
 )
 
 func TestRaceRepository(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &RaceRepositoryTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
+	suite.Run(t, &RaceRepositoryTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
 }
 
 type RaceRepositoryTestSuite struct {
-	testsuite.DBTestSuite
+	testsupport.DBTestSuite
 }
 
 func (s *RaceRepositoryTestSuite) TestCreateRace() {

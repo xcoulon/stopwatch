@@ -1,14 +1,15 @@
 package connection
 
 import (
+	"github.com/vatriathlon/stopwatch/pkg/configuration"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/vatriathlon/stopwatch/configuration"
 )
 
-// NewUserConnection returns a new database connection.
-func NewUserConnection(config *configuration.Configuration) (*gorm.DB, error) {
+// New returns a new database connection.
+func New(config *configuration.Configuration) (*gorm.DB, error) {
 	logrus.Infof("Connecting to Postgres database using: host=`%s:%d` dbname=`%s` username=`%s`",
 		config.GetPostgresHost(), config.GetPostgresPort(), config.GetPostgresDatabase(), config.GetPostgresUser())
 	db, err := gorm.Open("postgres", config.GetPostgresConfigString())

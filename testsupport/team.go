@@ -1,10 +1,10 @@
-package testmodel
+package testsupport
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/vatriathlon/stopwatch/model"
+	"github.com/vatriathlon/stopwatch/pkg/model"
 )
 
 // NewTeam returns a new team

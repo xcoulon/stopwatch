@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vatriathlon/stopwatch/service"
+	"github.com/vatriathlon/stopwatch/pkg/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

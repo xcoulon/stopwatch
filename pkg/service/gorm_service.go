@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	"github.com/vatriathlon/stopwatch/model"
 )
 
 // A TXIsoLevel specifies the characteristics of the transaction

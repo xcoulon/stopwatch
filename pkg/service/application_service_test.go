@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/vatriathlon/stopwatch/configuration"
-	"github.com/vatriathlon/stopwatch/model"
-	"github.com/vatriathlon/stopwatch/service"
-	testmodel "github.com/vatriathlon/stopwatch/test/model"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
+	"github.com/vatriathlon/stopwatch/pkg/configuration"
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	"github.com/vatriathlon/stopwatch/pkg/service"
+	"github.com/vatriathlon/stopwatch/testsupport"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,11 +18,11 @@ import (
 func TestAppService(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &AppServiceTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
+	suite.Run(t, &AppServiceTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
 }
 
 type AppServiceTestSuite struct {
-	testsuite.DBTestSuite
+	testsupport.DBTestSuite
 }
 
 func (s *AppServiceTestSuite) TestListRacesNoResult() {
@@ -103,7 +102,7 @@ func (s *AppServiceTestSuite) TestListTeams() {
 		require.NoError(t, err)
 		teamRepo := model.NewTeamRepository(s.DB)
 		for i := 1; i < 6; i++ {
-			team := testmodel.NewTeam(race.ID, i)
+			team := testsupport.NewTeam(race.ID, i)
 			err := teamRepo.Create(&team)
 			require.NoError(t, err)
 		}
@@ -173,7 +172,7 @@ func (s *AppServiceTestSuite) TestAddLap() {
 	teamRepo := model.NewTeamRepository(s.DB)
 	teams := []model.Team{}
 	for i := 1; i < 6; i++ {
-		team := testmodel.NewTeam(race.ID, i)
+		team := testsupport.NewTeam(race.ID, i)
 		err := teamRepo.Create(&team)
 		require.NoError(s.T(), err)
 		teams = append(teams, team)
@@ -218,7 +217,7 @@ func (s *AppServiceTestSuite) TestFirstAddLapForAll() {
 		teamRepo := model.NewTeamRepository(s.DB)
 		teams := []model.Team{}
 		for i := 1; i < 6; i++ {
-			team := testmodel.NewTeam(race.ID, i)
+			team := testsupport.NewTeam(race.ID, i)
 			err := teamRepo.Create(&team)
 			require.NoError(t, err)
 			teams = append(teams, team)

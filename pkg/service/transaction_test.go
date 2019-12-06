@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vatriathlon/stopwatch/configuration"
-
-	"github.com/vatriathlon/stopwatch/service"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
+	"github.com/vatriathlon/stopwatch/pkg/configuration"
+	"github.com/vatriathlon/stopwatch/pkg/service"
+	"github.com/vatriathlon/stopwatch/testsupport"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,14 +15,14 @@ import (
 )
 
 type TransactionTestSuite struct {
-	testsuite.DBTestSuite
+	testsupport.DBTestSuite
 	gormService *service.GormService
 }
 
 func TestRunTransaction(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &TransactionTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
+	suite.Run(t, &TransactionTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
 }
 
 func (s *TransactionTestSuite) SetupTest() {

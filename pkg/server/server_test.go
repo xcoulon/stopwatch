@@ -8,12 +8,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/vatriathlon/stopwatch/configuration"
-	"github.com/vatriathlon/stopwatch/model"
-	"github.com/vatriathlon/stopwatch/server"
-	"github.com/vatriathlon/stopwatch/service"
-	testmodel "github.com/vatriathlon/stopwatch/test/model"
-	testsuite "github.com/vatriathlon/stopwatch/test/suite"
+	"github.com/vatriathlon/stopwatch/pkg/configuration"
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	"github.com/vatriathlon/stopwatch/pkg/server"
+	"github.com/vatriathlon/stopwatch/pkg/service"
+	"github.com/vatriathlon/stopwatch/testsupport"
 
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
@@ -26,11 +25,11 @@ import (
 func TestServer(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &ServerTestSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
+	suite.Run(t, &ServerTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
 }
 
 type ServerTestSuite struct {
-	testsuite.DBTestSuite
+	testsupport.DBTestSuite
 	config configuration.Configuration
 	db     *gorm.DB
 	svc    service.ApplicationService
@@ -94,7 +93,7 @@ func (s *ServerTestSuite) TestListTeams() {
 		require.NoError(t, err)
 		teamRepo := model.NewTeamRepository(s.DB)
 		for i := 1; i < 6; i++ {
-			team := testmodel.NewTeam(race.ID, i)
+			team := testsupport.NewTeam(race.ID, i)
 			err := teamRepo.Create(&team)
 			require.NoError(t, err)
 		}
@@ -129,7 +128,7 @@ func (s *ServerTestSuite) TestAddLap() {
 		err := raceRepo.Create(&race)
 		require.NoError(t, err)
 		teamRepo := model.NewTeamRepository(s.DB)
-		team := testmodel.NewTeam(race.ID, 1)
+		team := testsupport.NewTeam(race.ID, 1)
 		err = teamRepo.Create(&team)
 		require.NoError(t, err)
 		// when

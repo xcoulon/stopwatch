@@ -8,10 +8,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/vatriathlon/stopwatch/pkg/model"
+	
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/vatriathlon/stopwatch/model"
 )
 
 // ImportService the interface for the application service

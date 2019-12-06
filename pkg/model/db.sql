@@ -50,8 +50,3 @@ CREATE TABLE lap (
 ALTER TABLE team add constraint lap_race_fk foreign key (race_id) REFERENCES race (race_id);
 -- Add a foreign key constraint to team
 ALTER TABLE team add constraint lap_team_fk foreign key (team_id) REFERENCES team (team_id);
-
--- sample data
-insert into race(race_id, name, allows_first_lap) values (1, 'Bike & Run XS', true);
-insert into race(race_id, name) values (2, 'Bike & Run Jeunes 10-13');
-insert into race(race_id, name) values (3, 'Bike & Run Jeunes 6-9');
