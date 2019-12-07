@@ -4,25 +4,25 @@ import (
 	"time"
 
 	"github.com/vatriathlon/stopwatch/pkg/model"
-	
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 )
 
-// ApplicationService the interface for the application service
-type ApplicationService struct {
+// RaceService the interface for the application service
+type RaceService struct {
 	baseService *GormService
 }
 
-// NewApplicationService returns a new ApplicationService
-func NewApplicationService(db *gorm.DB) ApplicationService {
-	return ApplicationService{
+// NewRaceService returns a new RaceService
+func NewRaceService(db *gorm.DB) RaceService {
+	return RaceService{
 		baseService: NewGormService(db),
 	}
 }
 
 // ListRaces list the races.
-func (s *ApplicationService) ListRaces() ([]model.Race, error) {
+func (s RaceService) ListRaces() ([]model.Race, error) {
 	var result []model.Race
 	err := Transactional(s.baseService, func(app Repositories) error {
 		var err error
@@ -36,7 +36,7 @@ func (s *ApplicationService) ListRaces() ([]model.Race, error) {
 }
 
 // GetRace get the race given its ID
-func (s *ApplicationService) GetRace(id int) (model.Race, error) {
+func (s RaceService) GetRace(id int) (model.Race, error) {
 	var result model.Race
 	err := Transactional(s.baseService, func(app Repositories) error {
 		var err error
@@ -50,7 +50,7 @@ func (s *ApplicationService) GetRace(id int) (model.Race, error) {
 }
 
 // StartRace set the current race to the one matching the given name
-func (s *ApplicationService) StartRace(raceID int) (model.Race, error) {
+func (s RaceService) StartRace(raceID int) (model.Race, error) {
 	var race model.Race
 	err := Transactional(s.baseService, func(app Repositories) error {
 		var err error
@@ -88,44 +88,8 @@ func (s *ApplicationService) StartRace(raceID int) (model.Race, error) {
 // 	return nil
 // }
 
-// AddFirstLapForAll set the current race to the one matching the given name
-func (s *ApplicationService) AddFirstLapForAll(raceID int) (model.Race, error) {
-	var race model.Race
-	err := Transactional(s.baseService, func(app Repositories) error {
-		var err error
-		race, err = app.Races().Lookup(raceID)
-		if err != nil {
-			return err
-		}
-		if !race.AllowsFirstLap || race.HasFirstLap {
-			return errors.New("first lap already recorded")
-		}
-		lapTime := time.Now()
-		teams, err := app.Teams().List(race.ID)
-		if err != nil {
-			return err
-		}
-		for _, team := range teams {
-			err = app.Laps().Create(&model.Lap{
-				RaceID: race.ID,
-				TeamID: team.ID,
-				Time:   lapTime,
-			})
-			if err != nil {
-				return err
-			}
-		}
-		race.HasFirstLap = true
-		return app.Races().Save(&race)
-	})
-	if err != nil {
-		return race, errors.Wrap(err, "unable to record for lap race")
-	}
-	return race, nil
-}
-
 // ListTeams list the teams for the current race.
-func (s *ApplicationService) ListTeams(raceID int) ([]model.Team, error) {
+func (s RaceService) ListTeams(raceID int) ([]model.Team, error) {
 	var result []model.Team
 	err := Transactional(s.baseService, func(app Repositories) error {
 		var err error
@@ -139,7 +103,7 @@ func (s *ApplicationService) ListTeams(raceID int) ([]model.Team, error) {
 }
 
 // AddLap record a new lap at the current time for the teams with given bib numbers
-func (s *ApplicationService) AddLap(raceID int, bibnumber int) (model.Team, error) {
+func (s RaceService) AddLap(raceID int, bibnumber int) (model.Team, error) {
 	var team model.Team
 	err := Transactional(s.baseService, func(app Repositories) error {
 		teamID, err := app.Teams().FindIDByBibNumber(raceID, bibnumber)

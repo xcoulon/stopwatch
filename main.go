@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/vatriathlon/stopwatch/cmd"
+	"os"
+
+	"github.com/vatriathlon/stopwatch/command"
 )
 
 func main() {
-	cmd.Execute()
+	os.Exit(command.Run(os.Args[1:]))
 }

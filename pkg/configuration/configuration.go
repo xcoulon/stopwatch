@@ -80,7 +80,7 @@ func New() (*Configuration, error) {
 		logrus.Warnf("cannot set logger level to '%s': %v", c.GetLogLevel(), err)
 	} else {
 		logrus.SetLevel(level)
-		logrus.Infof("setting logger level to '%s'", c.GetLogLevel())
+		// logrus.Infof("setting logger level to '%s'", c.GetLogLevel())
 	}
 	return c, nil
 }
@@ -106,7 +106,7 @@ func (c *Configuration) setConfigDefaults() {
 	c.v.SetTypeByDefaultValue(true)
 
 	c.v.SetDefault(varPostgresHost, "localhost")
-	c.v.SetDefault(varPostgresPort, 5432)
+	c.v.SetDefault(varPostgresPort, 5439)
 	c.v.SetDefault(varPostgresDatabase, "postgres")
 	c.v.SetDefault(varPostgresUser, "postgres")
 	c.v.SetDefault(varPostgresPassword, defaultDBPassword)

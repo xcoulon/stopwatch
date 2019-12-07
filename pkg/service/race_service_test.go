@@ -15,17 +15,17 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestAppService(t *testing.T) {
+func TestRaceService(t *testing.T) {
 	config, err := configuration.New()
 	require.NoError(t, err)
-	suite.Run(t, &AppServiceTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
+	suite.Run(t, &RaceServiceTestSuite{DBTestSuite: testsupport.NewDBTestSuite(config)})
 }
 
-type AppServiceTestSuite struct {
+type RaceServiceTestSuite struct {
 	testsupport.DBTestSuite
 }
 
-func (s *AppServiceTestSuite) TestListRacesNoResult() {
+func (s *RaceServiceTestSuite) TestListRacesNoResult() {
 	// given
 	raceRepo := model.NewRaceRepository(s.DB)
 	race1 := model.Race{
@@ -33,7 +33,7 @@ func (s *AppServiceTestSuite) TestListRacesNoResult() {
 	}
 	err := raceRepo.Create(&race1)
 	require.NoError(s.T(), err)
-	svc := service.NewApplicationService(s.DB)
+	svc := service.NewRaceService(s.DB)
 	// when
 	races, err := svc.ListRaces()
 	// then
@@ -41,7 +41,7 @@ func (s *AppServiceTestSuite) TestListRacesNoResult() {
 	assert.Len(s.T(), races, 1)
 }
 
-func (s *AppServiceTestSuite) TestListRacesMultipleResults() {
+func (s *RaceServiceTestSuite) TestListRacesMultipleResults() {
 	// given
 	raceRepo := model.NewRaceRepository(s.DB)
 	race1 := model.Race{
@@ -54,14 +54,14 @@ func (s *AppServiceTestSuite) TestListRacesMultipleResults() {
 	}
 	err = raceRepo.Create(&race2)
 	require.NoError(s.T(), err)
-	svc := service.NewApplicationService(s.DB)
+	svc := service.NewRaceService(s.DB)
 	// when
 	races, err := svc.ListRaces()
 	// then
 	require.NoError(s.T(), err)
 	assert.Len(s.T(), races, 2)
 }
-func (s *AppServiceTestSuite) TestGetRace() {
+func (s *RaceServiceTestSuite) TestGetRace() {
 
 	s.T().Run("ok", func(t *testing.T) {
 		// given
@@ -71,7 +71,7 @@ func (s *AppServiceTestSuite) TestGetRace() {
 		}
 		err := raceRepo.Create(&race)
 		require.NoError(t, err)
-		svc := service.NewApplicationService(s.DB)
+		svc := service.NewRaceService(s.DB)
 		// when
 		result, err := svc.GetRace(race.ID)
 		// then
@@ -81,7 +81,7 @@ func (s *AppServiceTestSuite) TestGetRace() {
 
 	s.T().Run("not found", func(t *testing.T) {
 		// given
-		svc := service.NewApplicationService(s.DB)
+		svc := service.NewRaceService(s.DB)
 		// when
 		_, err := svc.GetRace(-1)
 		// then
@@ -90,7 +90,7 @@ func (s *AppServiceTestSuite) TestGetRace() {
 
 }
 
-func (s *AppServiceTestSuite) TestListTeams() {
+func (s *RaceServiceTestSuite) TestListTeams() {
 
 	s.T().Run("ok", func(t *testing.T) {
 		// given
@@ -107,7 +107,7 @@ func (s *AppServiceTestSuite) TestListTeams() {
 			require.NoError(t, err)
 		}
 		require.NoError(t, err)
-		svc := service.NewApplicationService(s.DB)
+		svc := service.NewRaceService(s.DB)
 		// when
 		teams, err := svc.ListTeams(race.ID)
 		// then
@@ -116,10 +116,10 @@ func (s *AppServiceTestSuite) TestListTeams() {
 	})
 }
 
-func (s *AppServiceTestSuite) TestStartRace() {
+func (s *RaceServiceTestSuite) TestStartRace() {
 	// given
 	raceRepo := model.NewRaceRepository(s.DB)
-	svc := service.NewApplicationService(s.DB)
+	svc := service.NewRaceService(s.DB)
 
 	s.T().Run("ok", func(t *testing.T) {
 		// given
@@ -159,7 +159,7 @@ func (s *AppServiceTestSuite) TestStartRace() {
 	})
 }
 
-func (s *AppServiceTestSuite) TestAddLap() {
+func (s *RaceServiceTestSuite) TestAddLap() {
 
 	// given
 	raceRepo := model.NewRaceRepository(s.DB)
@@ -168,7 +168,7 @@ func (s *AppServiceTestSuite) TestAddLap() {
 	}
 	err := raceRepo.Create(&race)
 	require.NoError(s.T(), err)
-	svc := service.NewApplicationService(s.DB)
+	svc := service.NewRaceService(s.DB)
 	teamRepo := model.NewTeamRepository(s.DB)
 	teams := []model.Team{}
 	for i := 1; i < 6; i++ {
@@ -200,67 +200,4 @@ func (s *AppServiceTestSuite) TestAddLap() {
 			assert.Len(t, team.Laps, 2)
 		})
 	})
-}
-func (s *AppServiceTestSuite) TestFirstAddLapForAll() {
-
-	s.T().Run("enabled", func(t *testing.T) {
-		// given
-		raceRepo := model.NewRaceRepository(s.DB)
-		race := model.Race{
-			Name:           fmt.Sprintf("race %s", uuid.NewV4()),
-			AllowsFirstLap: true,
-			HasFirstLap:    false,
-		}
-		err := raceRepo.Create(&race)
-		require.NoError(t, err)
-		svc := service.NewApplicationService(s.DB)
-		teamRepo := model.NewTeamRepository(s.DB)
-		teams := []model.Team{}
-		for i := 1; i < 6; i++ {
-			team := testsupport.NewTeam(race.ID, i)
-			err := teamRepo.Create(&team)
-			require.NoError(t, err)
-			teams = append(teams, team)
-		}
-
-		t.Run("can add first lap", func(t *testing.T) {
-			// when
-			race, err := svc.AddFirstLapForAll(race.ID)
-			// then
-			require.NoError(t, err)
-			assert.True(t, race.AllowsFirstLap)
-			assert.True(t, race.HasFirstLap)
-			// check that all teams have a lap
-			teams, err := teamRepo.List(race.ID)
-			require.NoError(t, err)
-			for _, team := range teams {
-				assert.NotEmpty(t, team.Laps)
-			}
-		})
-
-		s.T().Run("cannot add first lap again", func(t *testing.T) {
-			// when
-			_, err := svc.AddFirstLapForAll(race.ID)
-			// then
-			require.Error(t, err)
-		})
-	})
-
-	s.T().Run("disabled", func(t *testing.T) {
-		// given
-		raceRepo := model.NewRaceRepository(s.DB)
-		race := model.Race{
-			Name:           fmt.Sprintf("race %s", uuid.NewV4()),
-			AllowsFirstLap: false,
-			HasFirstLap:    false,
-		}
-		err := raceRepo.Create(&race)
-		require.NoError(t, err)
-		svc := service.NewApplicationService(s.DB)
-		// when
-		_, err = svc.AddFirstLapForAll(race.ID)
-		// then
-		require.Error(t, err)
-	})
-
 }

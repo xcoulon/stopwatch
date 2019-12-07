@@ -16,12 +16,15 @@ require (
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1
+	github.com/kr/text v0.1.0
 	github.com/labstack/echo v0.0.0-20181123063703-c7eb8da9ec73
 	github.com/labstack/gommon v0.2.8
 	github.com/lib/pq v1.0.0
 	github.com/magiconair/properties v1.8.0
 	github.com/mattn/go-colorable v0.0.9
 	github.com/mattn/go-isatty v0.0.4
+	github.com/mattn/go-sqlite3 v2.0.1+incompatible // indirect
+	github.com/mitchellh/cli v1.0.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/ginkgo v1.6.0
 	github.com/onsi/gomega v1.7.1
@@ -31,6 +34,7 @@ require (
 	github.com/pilu/fresh v0.0.0-20170301142741-9c0092493eff
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v1.0.0
+	github.com/posener/complete v1.1.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.2.0
 	github.com/spf13/afero v1.1.2

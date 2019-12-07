@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	_ "github.com/lib/pq" // need to import postgres driver
 )
 
 // New returns a new database connection.

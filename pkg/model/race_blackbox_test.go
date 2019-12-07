@@ -209,7 +209,7 @@ func (s *RaceRepositoryTestSuite) TestListRacesMultipleResults() {
 	// then
 	require.NoError(s.T(), err)
 	require.Len(s.T(), races, 2)
-	// verify result ordering
-	assert.Equal(s.T(), race2.Name, races[0].Name)
-	assert.Equal(s.T(), race1.Name, races[1].Name)
+	// verify result ordering (by ID, so first created, first returned)
+	assert.Equal(s.T(), race1.Name, races[0].Name)
+	assert.Equal(s.T(), race2.Name, races[1].Name)
 }

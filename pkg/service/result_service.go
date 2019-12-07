@@ -185,7 +185,7 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 	if len(results) == 0 {
 		logrus.WithField("race_name", race.Name).
 			WithField("result_category", category).
-			Warn("skipping: no result in this category for this race")
+			Debug("skipping: no result in this category for this race")
 		return nil
 	}
 	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.adoc", strings.Replace(race.Name, " ", "-", -1), category)))
@@ -197,6 +197,7 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 	logrus.WithField("race_name", race.Name).
 		WithField("result_category", category).
 		WithField("teams", len(results)).
+		WithField("file", file.Name()).
 		Info("generating results...")
 
 	adocWriter := bufio.NewWriter(file)
