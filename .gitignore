@@ -64,3 +64,4 @@ coverage.txt
 *.html
 *.test
 !test/**/*.html
+todo.txt
