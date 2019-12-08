@@ -6,18 +6,21 @@ This is the server-side part of the application that allows for recording laps d
 
 - go 1.12 with `export GO111MODULES=on` or Go 1.13
 - Makefile to run the build/tests/deploy
-- docker-compose to start the database
-- asciidoctor to render the reports
+- asciidoctor-pdf to render the reports
 
-== How to initialize the Database
+== How to start the Database
 
 ````
-$ docker-compose up -d db
-
-$ docker exec -it stopwatch_db /bin/bash -c psql
+$ make start-database
 ````
 
-then copy the content of the `model/db.sql` file into the terminal to run the SQL statements that will create the tables, etc.
+=== How to initialize the Database
+
+````
+$ docker exec -it stopwatch_db /bin/bash -c "psql -U postgres"
+````
+
+then run the statements of the `model/db.sql` and `model/races.sql` files into the terminal to create the tables and initialize the races.
 
 
 == How to run it
@@ -25,7 +28,9 @@ then copy the content of the `model/db.sql` file into the terminal to run the SQ
 The process to run the backend is pretty rudimentary for now. It could probably be improved in the future.
 
 ````
-$ make run
+$ make build
+
+$ ./bin/stopwatch --help
 
 ````
 

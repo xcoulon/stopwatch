@@ -1,6 +1,8 @@
 GO111MODULE?=on
 export GO111MODULE
 
+BINARY_PATH := bin/stopwatch
+
 .PHONY: build
 ## build the binary executable from CLI
 build: $(INSTALL_PREFIX)
