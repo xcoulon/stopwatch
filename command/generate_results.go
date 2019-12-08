@@ -3,6 +3,7 @@ package command
 import (
 	"flag"
 	"fmt"
+	"os/exec"
 
 	"github.com/mitchellh/cli"
 	"github.com/vatriathlon/stopwatch/pkg/configuration"
@@ -61,10 +62,18 @@ func (c *GenerateResultsCommand) Run(args []string) int {
 		db.Close()
 	}()
 	svc := service.NewResultService(db)
-	err = svc.GenerateResults(c.raceID, c.outputDir)
+	files, err := svc.GenerateResults(c.raceID, c.outputDir)
 	if err != nil {
 		c.ui.Error(fmt.Sprintf("error while generating the reports for race '%d': %s", c.raceID, err.Error()))
 		return 1
+	}
+	for _, file := range files {
+		// external call to asciidoctor-pdf
+		c.ui.Output(fmt.Sprintf("generating pdf for %s", file))
+		err = exec.Command("asciidoctor-pdf", file).Run()
+		if err != nil {
+			c.ui.Error(err.Error())
+		}
 	}
 
 	return 0

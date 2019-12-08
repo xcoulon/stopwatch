@@ -90,8 +90,9 @@ func (s *ResultServiceTestSuite) TestListRacesNoResult() {
 
 	svc := service.NewResultService(s.DB)
 	// when
-	err = svc.GenerateResults(race.ID, "../../tmp/results")
+	files, err := svc.GenerateResults(race.ID, "../../tmp/results")
 	// then
 	require.NoError(s.T(), err)
+	require.NotEmpty(s.T(), files)
 
 }

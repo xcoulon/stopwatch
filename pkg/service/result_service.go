@@ -3,7 +3,6 @@ package service
 import (
 	"bufio"
 	"database/sql"
-	"encoding/csv"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,31 +74,37 @@ const (
 )
 
 // GenerateResults imports the data from the given file
-func (s *ResultService) GenerateResults(raceID int, outputDir string) error {
+func (s *ResultService) GenerateResults(raceID int, outputDir string) ([]string, error) {
+	files := []string{}
 	race, err := s.raceRepo.Lookup(raceID)
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results")
+		return nil, errors.Wrap(err, "unable to generate results")
 	}
 	// scratch
 	scratchRows, err := s.baseService.db.Raw(scratchQuery, race.ID).Rows()
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results")
+		return nil, errors.Wrap(err, "unable to generate results")
 	}
 	defer scratchRows.Close()
-	err = generateAsciidoc(outputDir, race, scratchRows, "Scratch", "", true)
+	file, err := generateAsciidoc(outputDir, race, scratchRows, "Scratch", "", true)
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results")
+		return nil, errors.Wrap(err, "unable to generate results")
 	}
-
+	if file != "" {
+		files = append(files, file)
+	}
 	// challenge entreprises
 	challengeRows, err := s.baseService.db.Raw(entrepriseChallengeQuery, race.ID).Rows()
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results")
+		return nil, errors.Wrap(err, "unable to generate results")
 	}
 	defer challengeRows.Close()
-	err = generateAsciidoc(outputDir, race, challengeRows, "Challenge Entreprise", "", true)
+	file, err = generateAsciidoc(outputDir, race, challengeRows, "Challenge Entreprise", "", true)
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results")
+		return files, errors.Wrap(err, "unable to generate results")
+	}
+	if file != "" {
+		files = append(files, file)
 	}
 
 	// by age and gender
@@ -110,71 +115,24 @@ func (s *ResultService) GenerateResults(raceID int, outputDir string) error {
 			categoryRows, err := s.baseService.db.Raw(byGenderAndAgeQuery, race.ID, ageCategory, gender).Rows()
 			defer categoryRows.Close()
 			if err != nil {
-				return errors.Wrap(err, "unable to generate results")
+				return nil, errors.Wrap(err, "unable to generate results")
 			}
-			err = generateAsciidoc(outputDir, race, categoryRows, ageCategory, gender, false)
+			file, err = generateAsciidoc(outputDir, race, categoryRows, ageCategory, gender, false)
 			if err != nil {
-				return errors.Wrap(err, "unable to generate results")
+				return nil, errors.Wrap(err, "unable to generate results")
+			}
+			if file != "" {
+				files = append(files, file)
 			}
 		}
 	}
-	return nil
+	return files, nil
 }
 
-func generateCSV(outputDir string, resultType string, race model.Race, rows *sql.Rows) error {
+func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, cat2 string, includeAgeGender bool) (string, error) {
 	results, err := readRows(race, rows)
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results")
-	}
-
-	if len(results) == 0 {
-		logrus.WithField("race_name", race.Name).WithField("result_category", resultType).Warn("skipping CSV generation: no result in this category for this race")
-		return nil
-	}
-
-	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.csv", strings.Replace(race.Name, " ", "-", -1), resultType)))
-	if err != nil {
-		return errors.Wrap(err, "unable to generate csv")
-	}
-	defer file.Close()
-	csvWriter := csv.NewWriter(file)
-	defer csvWriter.Flush()
-	// headers
-	err = csvWriter.Write([]string{
-		"Dossard",
-		"Equipe",
-		"Catégorie",
-		"Coureur 1",
-		"Coureur 2",
-		"Club",
-		"Nb Tours",
-		"Temps Total",
-	})
-	if err != nil {
-		return errors.Wrap(err, "unable to generate csv")
-	}
-
-	for _, r := range results {
-		err := csvWriter.Write([]string{
-			r.name,
-			r.bibNumber,
-			r.category,
-			r.members,
-			r.club,
-			strconv.Itoa(r.laps),
-			r.totalTime.String(),
-		})
-		if err != nil {
-			return errors.Wrap(err, "unable to generate csv")
-		}
-	}
-	return nil
-}
-
-func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, cat2 string, includeAgeGender bool) error {
-	results, err := readRows(race, rows)
-	if err != nil {
-		return errors.Wrap(err, "unable to generate results")
+		return "", errors.Wrap(err, "unable to generate results")
 	}
 	var category string
 	if cat2 != "" {
@@ -186,11 +144,11 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 		logrus.WithField("race_name", race.Name).
 			WithField("result_category", category).
 			Debug("skipping: no result in this category for this race")
-		return nil
+		return "", nil
 	}
 	file, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("%s-%s.adoc", strings.Replace(race.Name, " ", "-", -1), category)))
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results in asciidoc")
+		return "", errors.Wrap(err, "unable to generate results in asciidoc")
 	}
 	defer file.Close()
 
@@ -237,9 +195,9 @@ func generateAsciidoc(outputDir string, race model.Race, rows *sql.Rows, cat1, c
 	adocWriter.WriteString("|===\n")
 	err = adocWriter.Flush()
 	if err != nil {
-		return errors.Wrap(err, "unable to generate results in asciidoc")
+		return "", errors.Wrap(err, "unable to generate results in asciidoc")
 	}
-	return nil
+	return file.Name(), nil
 }
 
 func fmtDuration(d time.Duration) string {
@@ -324,74 +282,3 @@ func getMemberClubs(member1Club, member2Club string) string {
 	}
 	return strings.TrimSpace(fmt.Sprintf("%s %s", member1Club, member2Club))
 }
-
-// const (
-// 	// FontName the name of the font to use
-// 	fontName   string = "SourceCodePro-Regular"
-// 	leftMargin string = "  "
-// )
-
-// func generatePDF(outputFilename string, race model.Race, results []teamResult) error {
-// 	pdf := gopdf.GoPdf{}
-// 	pdf.Start(gopdf.Config{PageSize: gopdf.PageSizeA4})
-// 	fontLocation := fmt.Sprintf("../ttf/%s.ttf", fontName)
-// 	var parser core.TTFParser
-// 	err := parser.Parse(fontLocation)
-// 	if err != nil {
-// 		return errors.Wrap(err, "unable to generate PDF")
-// 	}
-// 	err = pdf.AddTTFFont(fontName, fontLocation)
-// 	if err != nil {
-// 		return errors.Wrap(err, "unable to generate PDF")
-// 	}
-
-// 	pdf.AddPage()
-// 	// title
-// 	fontSize := 20
-// 	err = pdf.SetFont(fontName, "", fontSize)
-// 	if err != nil {
-// 		return errors.Wrap(err, "unable to generate PDF")
-// 	}
-// 	pdf.Br(getHeight(&parser, fontSize) * 2)
-// 	pdf.Cell(nil, race.Name)
-// 	pdf.Br(getHeight(&parser, fontSize) * 2)
-// 	// teams in order
-// 	for i, teamResult := range results {
-// 		if (i+1)%25 == 0 {
-// 			pdf.AddPage()
-// 			pdf.Br(getHeight(&parser, fontSize) * 2)
-// 		}
-// 		// userName := strings.ToTitle(userData[0])
-// 		// pdf.Cell(nil, fmt.Sprintf("%s%s", leftMargin, userName))
-// 		// pdf.Br(getHeight(&parser, fontSize) * 2)
-// 		// items
-// 		fontSize = 10
-// 		err = pdf.SetFont(fontName, "", fontSize)
-// 		if err != nil {
-// 			return errors.Wrap(err, "unable to generate PDF")
-// 		}
-// 		err = pdf.Cell(nil, teamResult.name)
-// 		if err != nil {
-// 			return errors.Wrap(err, "unable to generate PDF")
-// 		}
-// 		pdf.Br(getHeight(&parser, fontSize) * 2)
-
-// 	}
-
-// 	// write output
-// 	err = pdf.WritePdf(outputFilename)
-// 	if err != nil {
-// 		return errors.Wrap(err, "unable to generate PDF")
-// 	}
-// 	return nil
-// }
-
-// func getHeight(parser *core.TTFParser, fontSize int) float64 {
-// 	//Measure Height
-// 	//get  CapHeight (https://en.wikipedia.org/wiki/Cap_height)
-// 	cap := float64(float64(parser.CapHeight()) * 1000.00 / float64(parser.UnitsPerEm()))
-// 	//convert
-// 	realHeight := cap * (float64(fontSize) / 1000.0)
-// 	// fmt.Printf("realHeight = %f", realHeight)
-// 	return realHeight * 2
-// }
