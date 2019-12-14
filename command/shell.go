@@ -87,31 +87,80 @@ func (c *ShellCommand) Run(args []string) int {
 	}
 
 	c.ui.Info("********************************************************")
-	c.ui.Info("type '\\s' to start the race, \\q to exit")
+	c.ui.Info("type '\\?' for help")
 	c.ui.Info("********************************************************")
 
 loop:
 	for {
 		cmd, err := l.Prompt(fmt.Sprintf("%s > ", race.Name))
-		if err == liner.ErrPromptAborted {
+		if err != nil {
 			c.ui.Error(fmt.Sprintf("error occurred: %s", err.Error()))
-		} else if err != nil {
-			c.ui.Error(fmt.Sprintf("error occurred: %s", err.Error()))
+			continue
 		}
 		cmd = strings.TrimSpace(cmd)
 		l.AppendHistory(cmd)
 
-		if cmd == "\\q" {
+		if cmd == "\\?" {
+			c.ui.Info(`Available commands are:
+	\?	displays help
+	\r 	displays the current race
+	\t	lists the teams in the current race
+	\q	quits
+	\s	starts the race with the given ID
+	\d	deletes the last lap of the team with the given ID
+	n	adds a lap to the team with the given ID
+			
+			`)
+		} else if cmd == "\\q" {
+			// exit the shell
 			break loop
+			// } else if cmd == "\\r" { // not implemented yet
+			// } else if cmd == "\\t" { // not implemented yet
 		} else if cmd == "\\s" {
 			race, err = svc.StartRace(race.ID)
 			if err != nil {
 				c.ui.Error(err.Error())
+				continue
 			}
+		} else if cmd == "\\r" {
+			race, err = svc.GetRace(race.ID)
+			if err != nil {
+				c.ui.Error(err.Error())
+				continue
+			}
+			if race.IsStarted() {
+				c.ui.Output(fmt.Sprintf("%s (started at %s)", race.Name, race.StartTimeStr()))
+			} else {
+				c.ui.Output(fmt.Sprintf("%s (not started yet)", race.Name))
+			}
+		} else if cmd == "\\t" {
+			teams, err := svc.ListTeams(race.ID)
+			if err != nil {
+				c.ui.Error(err.Error())
+				continue
+			}
+			for _, team := range teams {
+				filler := strings.Repeat(" ", 40-len(team.Name))
+				laps := strings.Repeat("🏁  ", len(team.Laps))
+				c.ui.Output(fmt.Sprintf("%d %s %s %s", team.BibNumber, team.Name, filler, laps))
+			}
+		} else if strings.HasPrefix(cmd, "\\d") {
+			bibnumber, err := strconv.Atoi(cmd[len("\\d "):])
+			if err != nil {
+				c.ui.Error(err.Error())
+				continue
+			}
+			team, lap, err := svc.DeleteLastLap(race.ID, bibnumber)
+			if err != nil {
+				c.ui.Error(err.Error())
+				continue
+			}
+			c.ui.Info(fmt.Sprintf("deleted lap #%d of team %d (%s) recorded at %s", len(team.Laps)+1, team.ID, team.Name, lap.Time.Format("15:04:05")))
 		} else if bibnumber, err := strconv.Atoi(cmd); err == nil {
 			team, err := svc.AddLap(race.ID, bibnumber)
 			if err != nil {
 				c.ui.Error(err.Error())
+				continue
 			}
 			laps := strings.Repeat("🏁  ", len(team.Laps))
 			totalTime := team.Laps[len(team.Laps)-1].Time.Sub(race.StartTime).Truncate(time.Second).String()

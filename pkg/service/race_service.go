@@ -1,6 +1,7 @@
 package service
 
 import (
+	"sort"
 	"time"
 
 	"github.com/vatriathlon/stopwatch/pkg/model"
@@ -102,7 +103,7 @@ func (s RaceService) ListTeams(raceID int) ([]model.Team, error) {
 	return result, nil
 }
 
-// AddLap record a new lap at the current time for the teams with given bib numbers
+// AddLap record a new lap at the current time for the team with given bib number
 func (s RaceService) AddLap(raceID int, bibnumber int) (model.Team, error) {
 	var team model.Team
 	err := Transactional(s.baseService, func(app Repositories) error {
@@ -122,8 +123,38 @@ func (s RaceService) AddLap(raceID int, bibnumber int) (model.Team, error) {
 		return err
 	})
 	if err != nil {
-		return team, errors.Wrapf(err, "unable to add laps to team")
+		return team, errors.Wrapf(err, "unable to add lap to team")
 	}
 
 	return team, nil
+}
+
+// DeleteLastLap removes the last for the team with given bib number
+func (s RaceService) DeleteLastLap(raceID int, bibnumber int) (model.Team, model.Lap, error) {
+	var team model.Team
+	var lap model.Lap
+	err := Transactional(s.baseService, func(app Repositories) error {
+		var err error
+		team, err = app.Teams().LoadByBibNumber(raceID, bibnumber)
+		if err != nil {
+			return err
+		}
+		if len(team.Laps) == 0 {
+			return errors.Errorf("no lap to remove for team '%s' (%d)", team.Name, team.ID)
+		}
+		laps := model.Laps((team.Laps))
+		sort.Sort(laps)
+		lap = laps[len(laps)-1]
+		err = app.Laps().Delete(lap)
+		if err != nil {
+			return err
+		}
+		team, err = app.Teams().LoadByBibNumber(raceID, bibnumber)
+		return err
+	})
+	if err != nil {
+		return team, lap, errors.Wrapf(err, "unable to delete last lap to team")
+	}
+
+	return team, lap, nil
 }

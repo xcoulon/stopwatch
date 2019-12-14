@@ -21,6 +21,6 @@ require (
 	github.com/sirupsen/logrus v1.2.0
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.2.2
-	google.golang.org/appengine v1.6.5 // indirect
+	google.golang.org/appengine v1.6.5
 	gopkg.in/yaml.v2 v2.2.4
 )

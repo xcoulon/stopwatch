@@ -37,9 +37,17 @@ func (l Lap) Equal(o Equaler) bool {
 	return l.ID == other.ID
 }
 
+// Laps a sortable array of laps
+type Laps []Lap
+
+func (a Laps) Len() int           { return len(a) }
+func (a Laps) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a Laps) Less(i, j int) bool { return a[i].ID < a[j].ID }
+
 // LapRepository provides functions to create and view team laps
 type LapRepository interface {
 	Create(lap *Lap) error
+	Delete(lap Lap) error
 }
 
 // NewLapRepository creates a new GormLapRepository
@@ -70,6 +78,15 @@ func (r *GormLapRepository) Create(lap *Lap) error {
 	db := r.db.Create(lap)
 	if err := db.Error; err != nil {
 		return errors.Wrap(err, "fail to store lap in DB")
+	}
+	return nil
+}
+
+// Delete deletes the given lap
+func (r *GormLapRepository) Delete(lap Lap) error {
+	db := r.db.Delete(lap)
+	if err := db.Error; err != nil {
+		return errors.Wrapf(err, "fail to delete lap with id '%d'", lap.ID)
 	}
 	return nil
 }

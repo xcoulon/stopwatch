@@ -200,4 +200,86 @@ func (s *RaceServiceTestSuite) TestAddLap() {
 			assert.Len(t, team.Laps, 2)
 		})
 	})
+
+}
+func (s *RaceServiceTestSuite) TestDeleteLastLap() {
+
+	// given
+	raceRepo := model.NewRaceRepository(s.DB)
+	race := model.Race{
+		Name: fmt.Sprintf("race %s", uuid.NewV4()),
+	}
+	err := raceRepo.Create(&race)
+	require.NoError(s.T(), err)
+	svc := service.NewRaceService(s.DB)
+	teamRepo := model.NewTeamRepository(s.DB)
+	teams := []model.Team{}
+	for i := 1; i < 6; i++ {
+		team := testsupport.NewTeam(race.ID, i)
+		err := teamRepo.Create(&team)
+		require.NoError(s.T(), err)
+		teams = append(teams, team)
+	}
+
+	// team 6 has 2 laps and should keep them all along the tests below
+	for i := 0; i < 2; i++ {
+		_, err := svc.AddLap(race.ID, 5)
+		require.NoError(s.T(), err)
+	}
+
+	s.T().Run("ok", func(t *testing.T) {
+
+		t.Run("team 1 having 1 lap", func(t *testing.T) {
+			// given
+			team, err := svc.AddLap(race.ID, 1)
+			require.NoError(t, err)
+			require.Len(t, team.Laps, 1)
+			lap1 := team.Laps[0]
+			// when
+			team, deletedLap, err := svc.DeleteLastLap(race.ID, 1)
+			// then
+			require.NoError(t, err)
+			require.Equal(t, teams[0].Name, team.Name)
+			require.Empty(t, team.Laps)
+			assert.Equal(t, lap1, deletedLap)
+			// verify other team
+			team5, err := teamRepo.LoadByBibNumber(race.ID, 5)
+			require.NoError(t, err)
+			require.Len(t, team5.Laps, 2)
+		})
+
+		t.Run("team 2 having 2 laps", func(t *testing.T) {
+			// given
+			_, err := svc.AddLap(race.ID, 2)
+			require.NoError(t, err)
+			team, err := svc.AddLap(race.ID, 2)
+			require.NoError(t, err)
+			require.Len(t, team.Laps, 2)
+			lap1 := team.Laps[0]
+			lap2 := team.Laps[1]
+			// when
+			team, deletedLap, err := svc.DeleteLastLap(race.ID, 2)
+			// then
+			require.NoError(t, err)
+			require.Equal(t, teams[1].Name, team.Name)
+			require.Len(t, team.Laps, 1)
+			assert.Equal(t, lap1, team.Laps[0])
+			assert.Equal(t, lap2, deletedLap)
+			// verify other team
+			team5, err := teamRepo.LoadByBibNumber(race.ID, 5)
+			require.NoError(t, err)
+			require.Len(t, team5.Laps, 2)
+		})
+	})
+
+	s.T().Run("failures", func(t *testing.T) {
+
+		t.Run("team 3 without any lap ", func(t *testing.T) {
+			// when
+			_, _, err := svc.DeleteLastLap(race.ID, 3)
+			// then
+			require.Error(t, err)
+		})
+	})
+
 }

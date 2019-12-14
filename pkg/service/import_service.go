@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/vatriathlon/stopwatch/pkg/model"
-	
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -71,31 +71,31 @@ func (s *ImportService) ImportFromFile(filename string) error {
 				if teamMember1 == undefinedMember {
 					teamMember1, err = newTeamMember(record)
 					if err != nil {
-						return errors.Wrapf(err, "unable to create team member from %v", record)
+						return errors.Wrapf(err, "unable to create team member from %+v", record)
 					}
 				} else {
 					teamMember2, err = newTeamMember(record)
 					if err != nil {
-						return errors.Wrapf(err, "unable to create team member from %v", record)
+						return errors.Wrapf(err, "unable to create team member from %+v", record)
 					}
 					var err error
 					bibNumber, err := strconv.Atoi(record[1])
 					if err != nil {
-						return errors.Wrapf(err, "unable to convert bibnumber '%s' to a number", record[10])
+						return errors.Wrapf(err, "unable to convert bibnumber '%s' to a number", record[1])
 					}
 					team := model.Team{
 						Name:        record[2], // team name
 						AgeCategory: GetTeamAgeCategory(teamMember1.AgeCategory, teamMember2.AgeCategory),
-						Challenge:   record[3], // race choice (open/entreprise)
-						BibNumber:   bibNumber,
-						Member1:     teamMember1,
-						Member2:     teamMember2,
-						Gender:      genderFrom(teamMember1, teamMember2),
-						RaceID:      races[record[0]].ID,
+						// Challenge:   record[3], // race choice (open/entreprise)
+						BibNumber: bibNumber,
+						Member1:   teamMember1,
+						Member2:   teamMember2,
+						Gender:    genderFrom(teamMember1, teamMember2),
+						RaceID:    races[record[0]].ID,
 					}
 					err = app.Teams().Create(&team)
 					if err != nil {
-						return errors.Wrapf(err, "unable to create team from %v", team)
+						return errors.Wrapf(err, "unable to create team from %+v", team)
 					}
 					// reset
 					teamMember1 = undefinedMember
@@ -115,36 +115,38 @@ func genderFrom(teamMember1, teamMember2 model.TeamMember) string {
 }
 
 func newTeamMember(record []string) (model.TeamMember, error) {
-	dateOfBirth, err := time.Parse("02/01/2006", record[6])
+	dateOfBirth, err := time.Parse("02/01/2006", record[5])
 	if err != nil {
-		return model.TeamMember{}, errors.Wrapf(err, "unable to parse date '%s'", record[3])
+		return model.TeamMember{}, errors.Wrapf(err, "unable to parse date '%s'", record[5])
 	}
 	return model.TeamMember{
-		LastName:    record[4],
-		FirstName:   record[5],
+		LastName:    record[3],
+		FirstName:   record[4],
 		DateOfBirth: dateOfBirth,
-		Gender:      record[7],
+		Gender:      record[6],
 		AgeCategory: GetAgeCategory(dateOfBirth),
-		Club:        record[10],
+		Club:        record[9],
 	}, nil
 }
 
 const (
-	// Poussin 		2009 à 2013
+	// MiniPoussin 2012 à 2013
+	MiniPoussin = "Mini-poussin"
+	// Poussin 		2010 à 2011
 	Poussin = "Poussin"
-	// Pupille 		2007 à 2008
+	// Pupille 		2008 à 2009
 	Pupille = "Pupille"
-	// Benjamin 	2005 à 2006
+	// Benjamin 	2006 à 2007
 	Benjamin = "Benjamin"
-	// Minime 		2003 à 2004
+	// Minime 		2004 à 2005
 	Minime = "Minime"
-	// Cadet 		2001 à 2002
+	// Cadet 		2002 à 2003
 	Cadet = "Cadet"
-	// Junior 		1999 à 2000
+	// Junior 		2000 à 2001
 	Junior = "Junior"
-	// Senior 	 	1979 à 1998
+	// Senior 	 	1980 à 1999
 	Senior = "Senior"
-	// Veteran 		1955 à 1978
+	// Veteran 		1955 à 1979
 	Veteran = "Vétéran"
 )
 
@@ -152,42 +154,42 @@ const (
 func GetAgeCategory(dateOfBirth time.Time) string {
 	yearOfBirth := dateOfBirth.Year()
 	logrus.WithField("year_of_birth", yearOfBirth).Debug("computing age category")
-	if yearOfBirth >= 2009 {
+	switch {
+	case yearOfBirth == 2012 || yearOfBirth == 2013:
+		return MiniPoussin
+	case yearOfBirth == 2010 || yearOfBirth == 2011:
 		return Poussin
-	}
-	if yearOfBirth == 2007 || yearOfBirth == 2008 {
+	case yearOfBirth == 2008 || yearOfBirth == 2009:
 		return Pupille
-	}
-	if yearOfBirth == 2005 || yearOfBirth == 2006 {
+	case yearOfBirth == 2006 || yearOfBirth == 2007:
 		return Benjamin
-	}
-	if yearOfBirth == 2003 || yearOfBirth == 2004 {
+	case yearOfBirth == 2004 || yearOfBirth == 2005:
 		return Minime
-	}
-	if yearOfBirth == 2001 || yearOfBirth == 2002 {
+	case yearOfBirth == 2002 || yearOfBirth == 2003:
 		return Cadet
-	}
-	if yearOfBirth == 1999 || yearOfBirth == 2000 {
+	case yearOfBirth == 2000 || yearOfBirth == 2001:
 		return Junior
-	}
-	if yearOfBirth >= 1979 && yearOfBirth <= 1998 {
+	case yearOfBirth >= 1980 && yearOfBirth <= 1999:
 		return Senior
+	default:
+		return Veteran
 	}
-	return Veteran
+
 }
 
 var ageCategories map[string]int
 
 func init() {
 	ageCategories = map[string]int{
-		Poussin:  1,
-		Pupille:  2,
-		Benjamin: 3,
-		Minime:   4,
-		Cadet:    5,
-		Junior:   6,
-		Veteran:  7,
-		Senior:   8,
+		MiniPoussin: 1,
+		Poussin:     2,
+		Pupille:     3,
+		Benjamin:    4,
+		Minime:      5,
+		Cadet:       6,
+		Junior:      7,
+		Veteran:     8,
+		Senior:      9,
 	}
 }
 

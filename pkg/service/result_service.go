@@ -94,18 +94,18 @@ func (s *ResultService) GenerateResults(raceID int, outputDir string) ([]string,
 		files = append(files, file)
 	}
 	// challenge entreprises
-	challengeRows, err := s.baseService.db.Raw(entrepriseChallengeQuery, race.ID).Rows()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to generate results")
-	}
-	defer challengeRows.Close()
-	file, err = generateAsciidoc(outputDir, race, challengeRows, "Challenge Entreprise", "", true)
-	if err != nil {
-		return files, errors.Wrap(err, "unable to generate results")
-	}
-	if file != "" {
-		files = append(files, file)
-	}
+	// challengeRows, err := s.baseService.db.Raw(entrepriseChallengeQuery, race.ID).Rows()
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "unable to generate results")
+	// }
+	// defer challengeRows.Close()
+	// file, err = generateAsciidoc(outputDir, race, challengeRows, "Challenge Entreprise", "", true)
+	// if err != nil {
+	// 	return files, errors.Wrap(err, "unable to generate results")
+	// }
+	// if file != "" {
+	// 	files = append(files, file)
+	// }
 
 	// by age and gender
 	ageCategories := []string{Poussin, Pupille, Benjamin, Minime, Cadet, Junior, Senior, Veteran}

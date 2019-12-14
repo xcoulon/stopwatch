@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mitchellh/cli"
 	"github.com/vatriathlon/stopwatch/pkg/configuration"
@@ -48,10 +49,14 @@ func (c *ListRacesCommand) Run(args []string) int {
 		c.ui.Error(fmt.Sprintf("error while listing races: %s", err.Error()))
 		return 1
 	}
-	c.ui.Info("ID\tName")
+	c.ui.Output("ID\tName                          Start")
 	for _, r := range races {
-		c.ui.Info(fmt.Sprintf("%d\t%s", r.ID, r.Name))
-
+		if r.StartTimeStr() != "" {
+			filler := strings.Repeat(" ", 30-len(r.Name))
+			c.ui.Output(fmt.Sprintf("%d\t%s%s%s", r.ID, r.Name, filler, r.StartTimeStr()))
+		} else {
+			c.ui.Output(fmt.Sprintf("%d\t%s", r.ID, r.Name))
+		}
 	}
 	return 0
 }

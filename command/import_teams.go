@@ -75,7 +75,7 @@ func (c *ImportTeamsCommand) Synopsis() string {
 // Help return the help of this command
 func (c *ImportTeamsCommand) Help() string {
 	return `
-	Usage: stopwatch import --source=<path/to/file.csv>
+	Usage: stopwatch import --file=<path/to/file.csv>
 	  Imports the teams specified by the CSV file in the database
 	`
 }

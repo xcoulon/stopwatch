@@ -18,32 +18,36 @@ func TestGetAgeCategory(t *testing.T) {
 		dateOfBirth string
 		expected    string
 	}{
+		service.MiniPoussin: {
+			dateOfBirth: "2012-02-03",
+			expected:    service.MiniPoussin,
+		},
 		service.Poussin: {
-			dateOfBirth: "2009-02-03",
+			dateOfBirth: "2010-02-03",
 			expected:    service.Poussin,
 		},
 		service.Pupille: {
-			dateOfBirth: "2008-02-03",
+			dateOfBirth: "2009-02-03",
 			expected:    service.Pupille,
 		},
 		service.Benjamin: {
-			dateOfBirth: "2006-02-03",
+			dateOfBirth: "2007-02-03",
 			expected:    service.Benjamin,
 		},
 		service.Cadet: {
-			dateOfBirth: "2001-02-03",
+			dateOfBirth: "2002-02-03",
 			expected:    service.Cadet,
 		},
 		service.Junior: {
-			dateOfBirth: "1999-02-03",
+			dateOfBirth: "2000-02-03",
 			expected:    service.Junior,
 		},
 		service.Senior: {
-			dateOfBirth: "1980-02-03",
+			dateOfBirth: "1981-02-03",
 			expected:    service.Senior,
 		},
 		service.Veteran: {
-			dateOfBirth: "1974-02-03",
+			dateOfBirth: "1975-02-03",
 			expected:    service.Veteran,
 		},
 	}
@@ -68,6 +72,16 @@ func TestGetTeamAgeCategory(t *testing.T) {
 		category2 string
 		expected  string
 	}{
+		"MiniPoussin/MiniPoussin": {
+			service.MiniPoussin,
+			service.MiniPoussin,
+			service.MiniPoussin,
+		},
+		"MiniPoussin/Poussin": {
+			service.MiniPoussin,
+			service.Poussin,
+			service.Poussin,
+		},
 		"Poussin/Poussin": {
 			service.Poussin,
 			service.Poussin,
@@ -92,6 +106,11 @@ func TestGetTeamAgeCategory(t *testing.T) {
 			service.Veteran,
 			service.Senior,
 			service.Senior,
+		},
+		"Veteran/Veteran": {
+			service.Veteran,
+			service.Veteran,
+			service.Veteran,
 		},
 	}
 	for testname, testdata := range testcases {
